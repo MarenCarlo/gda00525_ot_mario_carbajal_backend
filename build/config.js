@@ -5,10 +5,11 @@ const dotenv_1 = require("dotenv");
 const parseBoolean = (value) => (value === null || value === void 0 ? void 0 : value.toLowerCase()) === 'true';
 const server_state = parseBoolean(process.env.SV_STATE);
 exports.default = {
-    DB_host: process.env.DB_HOST || "127.0.0.1",
+    DB_host: server_state === true ? process.env.DB_HOST_PRO : process.env.DB_HOST_DEV || "localhost",
+    DB_dialect: process.env.DB_DIALECT || "mssql",
     DB_database: server_state === true ? process.env.DB_DATABASE_PRO : process.env.DB_DATABASE_DEV,
-    DB_port: Number(process.env.DB_PORT) || 3006,
-    DB_user: process.env.DB_USER || "root",
+    DB_username: process.env.DB_USER || "sa",
     DB_password: process.env.DB_PASSWORD || "",
-    DB_timezone: server_state === true ? process.env.DB_TIMEZONE_PRO : process.env.DB_TIMEZONE_DEV || "UTC+0"
+    DB_port: server_state === true ? Number(process.env.DB_PORT_PRO) : Number(process.env.DB_PORT_DEV) || 1433,
+    APP_staging: server_state
 };
