@@ -3,6 +3,7 @@
  */
 export interface Texts {
     app: App;
+    sequelize: Sequelize;
     validate_token: Validate_Token;
     validate_admin: Validate_Admin;
     auth_controller: Auth_Controller;
@@ -16,6 +17,11 @@ export interface Texts {
 interface App {
     not_allowed_by_cors: string;
     not_finded_route: string;
+}
+
+interface Sequelize {
+    connection_success: string;
+    connection_failed: string;
 }
 
 /**
