@@ -7,11 +7,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
  */
 const texts = {
     /**
-     * Server Configurations
+     * Server
      */
     app: {
         not_allowed_by_cors: 'Conexion no permitida por CORS',
         not_finded_route: 'Ruta no encontrada',
+    },
+    sequelize: {
+        connection_success: 'Conexión establecida exitosamente con BD.',
+        connection_failed: 'No se pudo conectar con la base de datos BD: '
     },
     /**
      * Middlewares
