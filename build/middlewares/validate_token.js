@@ -16,47 +16,47 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const dotenv_1 = require("dotenv");
 (0, dotenv_1.config)();
 /**
- * Translate Import
- */
-const texts_1 = __importDefault(require("../texts/texts"));
-/**
  * MIDDLEWARE
  *
- * Session Token Validation
+ * Validacion del token de Sesión
  */
-const verifyToken = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+const validateToken = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const token = req.header('auth-token');
     /**
-     * Is Token Received?
+     * Se recibe token?
      */
     if (!token)
         return res.status(401).json({
             error_token: true,
-            error_message: texts_1.default.validate_token.denied_access
+            message: 'Acceso Denegado.'
         });
     const secret = process.env.TOKEN_SECRET;
     /**
-     * Is TOKEN_SECRET defined?
+     * Esta TOKEN_SECRET definida en las variables de entorno?
      */
     if (!secret) {
         return res.status(500).json({
             error_token: true,
-            error_message: texts_1.default.validate_token.secret_not_defined
+            message: 'La clave secreta no está definida.'
         });
     }
     try {
         const verified = jsonwebtoken_1.default.verify(token, secret);
+        /**
+         * Objeto con datos del usuario
+         * seteado en la request segun el token de sesión recibido
+         */
         req.user = verified;
         next();
     }
     catch (error) {
         /**
-         * Is Token invalid?
+         * El token es invalido?
          */
-        res.status(401).json({
+        return res.status(401).json({
             error_token: true,
-            error_message: texts_1.default.validate_token.invalid_token
+            error_message: 'Esta sesión no es valida o ha caducado.'
         });
     }
 });
-exports.default = verifyToken;
+exports.default = validateToken;

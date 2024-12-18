@@ -2,13 +2,9 @@ import { NextFunction, Request, Response } from 'express';
 import jwt, { JwtPayload, Secret } from 'jsonwebtoken';
 import { config } from "dotenv";
 config();
-/**
- * Translate Import
- */
-import texts from '../texts/texts';
 
 /**
- * Extends the Request interface to include the user property
+ * Extiende la interface de Request para que acepte la propiedad user
  */
 declare global {
     namespace Express {
@@ -21,40 +17,44 @@ declare global {
 /**
  * MIDDLEWARE
  * 
- * Session Token Validation
+ * Validacion del token de Sesión
  */
-const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
+const validateToken = async (req: Request, res: Response, next: NextFunction) => {
     const token = req.header('auth-token');
     /**
-     * Is Token Received?
+     * Se recibe token?
      */
     if (!token) return res.status(401).json({
         error_token: true,
-        error_message: texts.validate_token.denied_access
+        message: 'Acceso Denegado.'
     });
     const secret = process.env.TOKEN_SECRET as Secret;
     /**
-     * Is TOKEN_SECRET defined?
+     * Esta TOKEN_SECRET definida en las variables de entorno?
      */
     if (!secret) {
         return res.status(500).json({
             error_token: true,
-            error_message: texts.validate_token.secret_not_defined
+            message: 'La clave secreta no está definida.'
         });
     }
     try {
         const verified = jwt.verify(token, secret) as JwtPayload;
+        /**
+         * Objeto con datos del usuario 
+         * seteado en la request segun el token de sesión recibido
+         */
         req.user = verified;
         next();
     } catch (error) {
         /**
-         * Is Token invalid?
+         * El token es invalido?
          */
-        res.status(401).json({
+        return res.status(401).json({
             error_token: true,
-            error_message: texts.validate_token.invalid_token
+            error_message: 'Esta sesión no es valida o ha caducado.'
         })
     }
 }
 
-export default verifyToken;
+export default validateToken;

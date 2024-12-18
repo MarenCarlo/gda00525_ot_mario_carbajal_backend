@@ -15,7 +15,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.testConnection = void 0;
 const sequelize_1 = require("sequelize");
 const config_1 = __importDefault(require("../config"));
-const texts_1 = __importDefault(require("../texts/texts"));
 const sequelize = new sequelize_1.Sequelize(config_1.default.DB_database, config_1.default.DB_username, config_1.default.DB_password, {
     host: config_1.default.DB_host,
     dialect: config_1.default.DB_dialect,
@@ -25,17 +24,27 @@ const sequelize = new sequelize_1.Sequelize(config_1.default.DB_database, config
 const testConnection = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         yield sequelize.authenticate();
-        console.log(`${texts_1.default.sequelize.connection_success}`);
+        console.log('Conectado Exitosamente a BD');
         console.table({
             'dialect': config_1.default.DB_dialect,
             'host': config_1.default.DB_host,
             'port': config_1.default.DB_port,
             'database': config_1.default.DB_database,
+            'user': config_1.default.DB_username,
             'staging': config_1.default.APP_staging === true ? 'production' : 'development'
         });
     }
     catch (error) {
-        console.error(`${texts_1.default.sequelize.connection_failed}`, error);
+        console.error('Conexión Fallida a BD: ', error);
+        console.table({
+            'dialect': config_1.default.DB_dialect,
+            'host': config_1.default.DB_host,
+            'port': config_1.default.DB_port,
+            'database': config_1.default.DB_database,
+            'user': config_1.default.DB_username,
+            'staging': config_1.default.APP_staging === true ? 'production' : 'development'
+        });
     }
 });
 exports.testConnection = testConnection;
+exports.default = sequelize;
