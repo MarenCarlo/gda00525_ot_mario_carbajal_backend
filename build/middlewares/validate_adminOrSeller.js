@@ -14,9 +14,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
  *
  * Validacion de usuario Admin o Vendedor
  */
-const validateAdmin = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+const validateAdminOrSeller = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
-    if (user.rol.idRol === 1) {
+    if (user.rol.idRol === 1 || user.rol.idRol === 2) {
         next();
     }
     else {
@@ -26,4 +26,4 @@ const validateAdmin = (req, res, next) => __awaiter(void 0, void 0, void 0, func
         });
     }
 });
-exports.default = validateAdmin;
+exports.default = validateAdminOrSeller;

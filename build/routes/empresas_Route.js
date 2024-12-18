@@ -4,16 +4,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const product_Controller_1 = require("../controllers/product_Controller");
+const users_Controller_1 = require("../controllers/users_Controller");
+/**
+ * Middlewares
+ */
 const validate_token_1 = __importDefault(require("../middlewares/validate_token"));
-class DefaultRoute {
+const validate_adminOrSeller_1 = __importDefault(require("../middlewares/validate_adminOrSeller"));
+class EmpresasRouter {
     constructor() {
         this.router = (0, express_1.Router)();
         this.config();
     }
     config() {
-        this.router.get('/products_list', validate_token_1.default, product_Controller_1.productController.getProductsList);
+        this.router.post('/SignUp', validate_token_1.default, validate_adminOrSeller_1.default, users_Controller_1.usersController.addUser);
     }
 }
-const defaultRoute = new DefaultRoute();
-exports.default = defaultRoute.router;
+const empresasRouter = new EmpresasRouter();
+exports.default = empresasRouter.router;
