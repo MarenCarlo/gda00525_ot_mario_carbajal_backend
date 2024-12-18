@@ -10,10 +10,12 @@ const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 /**
- * Importación de Rutas.
+ * Importación de Enrutadores de Endpoints.
  */
 const default_Route_1 = __importDefault(require("./routes/default_Route"));
 const users_Route_1 = __importDefault(require("./routes/users_Route"));
+const enterprises_Route_1 = __importDefault(require("./routes/enterprises_Route"));
+const roles_Route_1 = __importDefault(require("./routes/roles_Route"));
 const auth_Route_1 = __importDefault(require("./routes/auth_Route"));
 class App {
     constructor() {
@@ -47,26 +49,28 @@ class App {
         this.app.use((0, cors_1.default)(corsOptions));
     }
     /**
-     * Available Routes API.
+     * Manejo de Enrutadores API.
      */
     routes() {
         /**
-         * Public Routes.
+         * Rutas Publicas.
          */
         this.app.use('/api/v1', default_Route_1.default);
         this.app.use('/api/v1', auth_Route_1.default);
         /**
-         * Protected Routes.
+         * Rutas Protegidas.
          */
         this.app.use('/api/v1/users', users_Route_1.default);
+        this.app.use('/api/v1/enterprises', enterprises_Route_1.default);
+        this.app.use('/api/v1/roles', roles_Route_1.default);
         /**
-         * Not Finded Route.
+         * Manejo de Rutas Inexistentes.
          */
         this.app.use((req, res) => {
             res.status(404).json({
                 error: true,
-                error_message: 'Ruta no encontrada',
-                info_route: process.env.SV_URL + '/api/v1'
+                message: 'Ruta Inexistente',
+                API_documentation: process.env.SV_URL + '/api/v1'
             });
         });
     }
