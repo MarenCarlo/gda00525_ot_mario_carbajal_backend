@@ -1,6 +1,5 @@
 import { Sequelize } from 'sequelize';
 import config from '../config';
-import texts from '../texts/texts';
 
 const sequelize = new Sequelize(config.DB_database, config.DB_username, config.DB_password, {
     host: config.DB_host,
@@ -12,15 +11,26 @@ const sequelize = new Sequelize(config.DB_database, config.DB_username, config.D
 export const testConnection = async () => {
     try {
         await sequelize.authenticate();
-        console.log(`${texts.sequelize.connection_success}`);
+        console.log('Conectado Exitosamente a BD');
         console.table({
             'dialect': config.DB_dialect,
             'host': config.DB_host,
             'port': config.DB_port,
             'database': config.DB_database,
+            'user': config.DB_username,
             'staging': config.APP_staging === true ? 'production' : 'development'
         });
     } catch (error) {
-        console.error(`${texts.sequelize.connection_failed}`, error);
+        console.error('Conexión Fallida a BD: ', error);
+        console.table({
+            'dialect': config.DB_dialect,
+            'host': config.DB_host,
+            'port': config.DB_port,
+            'database': config.DB_database,
+            'user': config.DB_username,
+            'staging': config.APP_staging === true ? 'production' : 'development'
+        });
     }
 };
+
+export default sequelize;

@@ -1,4 +1,5 @@
 import express, { Application } from 'express';
+import morgan from 'morgan';
 import helmet from 'helmet';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -8,11 +9,8 @@ dotenv.config();
  * Importación de Rutas.
  */
 import default_Route from './routes/default_Route';
-
-/**
- * Translate Import
- */
-import texts from './texts/texts';
+import usersRouter from './routes/users_Route';
+import authRouter from './routes/auth_Route';
 
 class App {
     /**
@@ -31,6 +29,7 @@ class App {
      */
     private config(): void {
         this.app.set('port', process.env.SV_PORT || 3000);
+        this.app.use(morgan('dev'));
         this.app.use(express.json());
         this.app.use(express.urlencoded({ extended: false }));
         this.app.use(helmet());
@@ -42,7 +41,7 @@ class App {
                 if (whiteList.indexOf(origin) !== -1 || !origin) {
                     callback(null, true)
                 } else {
-                    callback(new Error(texts.app.not_allowed_by_cors))
+                    callback(new Error("Esta IP no es permitida"))
                 }
             },
             methods: "GET, POST HEAD, PUT, PATCH ,DELETE",
@@ -59,10 +58,12 @@ class App {
          * Public Routes.
          */
         this.app.use('/api/v1', default_Route);
+        this.app.use('/api/v1', authRouter);
 
         /**
          * Protected Routes.
          */
+        this.app.use('/api/v1/users', usersRouter);
 
         /**
          * Not Finded Route.
@@ -70,7 +71,7 @@ class App {
         this.app.use((req, res) => {
             res.status(404).json({
                 error: true,
-                error_message: texts.app.not_finded_route,
+                error_message: 'Ruta no encontrada',
                 info_route: process.env.SV_URL + '/api/v1'
             });
         });
