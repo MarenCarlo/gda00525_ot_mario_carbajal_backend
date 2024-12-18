@@ -4,22 +4,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const users_Controller_1 = require("../controllers/users_Controller");
+const enterprises_Controller_1 = require("../controllers/enterprises_Controller");
 /**
  * Middlewares
  */
 const validate_token_1 = __importDefault(require("../middlewares/validate_token"));
 const validate_adminOrSeller_1 = __importDefault(require("../middlewares/validate_adminOrSeller"));
 const validate_admin_1 = __importDefault(require("../middlewares/validate_admin"));
-class UsersRouter {
+class EnterprisesRouter {
     constructor() {
         this.router = (0, express_1.Router)();
         this.config();
     }
     config() {
-        this.router.post('/SignUp', validate_token_1.default, validate_adminOrSeller_1.default, users_Controller_1.usersController.addUser);
-        this.router.put('/modifyUser', validate_token_1.default, validate_admin_1.default, users_Controller_1.usersController.modifyUser);
+        this.router.post('/addEnterprise', validate_token_1.default, validate_adminOrSeller_1.default, enterprises_Controller_1.enterprisesController.addEnterprise);
+        this.router.put('/modifyEnterprise', validate_token_1.default, validate_admin_1.default, enterprises_Controller_1.enterprisesController.modifyEnterprise);
     }
 }
-const usersRouter = new UsersRouter();
-exports.default = usersRouter.router;
+const enterprisesRouter = new EnterprisesRouter();
+exports.default = enterprisesRouter.router;

@@ -14,17 +14,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
  *
  * Validacion de usuario con rol de Administrador
  */
-const validateAdmin = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+const validateSuperUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
-    if (user.rol.idRol === 1) {
+    if (user.isSuperUser === true) {
         next();
     }
     else {
         return res.status(401).json({
             error: true,
-            message: 'No tiene los permisos suficientes para realizar esta acción.',
+            message: 'Se requiere tener permisos mayores para llevar a cabo esta acción.',
             data: {}
         });
     }
 });
-exports.default = validateAdmin;
+exports.default = validateSuperUser;

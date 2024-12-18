@@ -15,7 +15,7 @@ class UsersRouter {
     }
     config(): void {
         this.router.post('/SignUp', validateToken, validateAdminOrSeller, usersController.addUser);
-        this.router.post('/modifyUser', validateToken, validateAdmin, usersController.modifyUser);
+        this.router.put('/modifyUser', validateToken, validateAdmin, usersController.modifyUser);
     }
 }
 

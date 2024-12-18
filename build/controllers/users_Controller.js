@@ -19,7 +19,7 @@ const bcrypt_1 = __importDefault(require("bcrypt"));
 const tb_usuarios_1 = __importDefault(require("../models/tb_usuarios"));
 class UsersController {
     /**
-    * Este Endpoint sirve para registrar a los usuarios de la APP
+    * Este Endpoint sirve para registrar a nuevos usuarios en la APP
     */
     addUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -98,7 +98,7 @@ class UsersController {
         });
     }
     /**
-     * Editar Usuarios
+     * Este Endpoint sirve para editar data de usuarios registrados en la APP
      */
     modifyUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -134,7 +134,7 @@ class UsersController {
                     if (!user) {
                         return res.status(403).json({
                             error: true,
-                            message: "Ese Id de usuario no fue encontrado en BD.",
+                            message: "El ID de Usuario que se busca modificar, no existe en BD.",
                             data: {}
                         });
                     }
@@ -149,17 +149,17 @@ class UsersController {
                     // OBJETO DE DATOS MSSQL
                     const replacements = {
                         idUsuario: idUsuario,
-                        nombre_completo: nombre_completo || null,
-                        username: username || null,
+                        nombre_completo: nombre_completo,
+                        username: username,
                         passphrase: null,
-                        telefono: telefono || null,
-                        email: email || null,
-                        direccion: direccion || null,
-                        fecha_nacimiento: fecha_nacimiento || null,
+                        telefono: telefono,
+                        email: email,
+                        direccion: direccion,
+                        fecha_nacimiento: fecha_nacimiento,
                         isSuperUser: null,
-                        isActive: newStateValue !== undefined ? newStateValue : null,
-                        rol_idRol: rol_idRol || null,
-                        empresa_idEmpresa: empresa_idEmpresa || null
+                        isActive: newStateValue,
+                        rol_idRol: rol_idRol,
+                        empresa_idEmpresa: empresa_idEmpresa
                     };
                     // Ejecucion el procedimiento almacenado
                     yield connection_1.default.query('EXEC sp_Editar_Usuario :idUsuario, :nombre_completo, :username, :passphrase, :telefono, :email, :direccion, :fecha_nacimiento, :isSuperUser, :isActive, :rol_idRol, :empresa_idEmpresa;', {
@@ -175,7 +175,6 @@ class UsersController {
                     });
                 }
                 catch (error) {
-                    console.log(error);
                     return res.status(500).json({
                         error: true,
                         message: 'Hay problemas al procesar la solicitud.',
