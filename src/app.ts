@@ -6,10 +6,12 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 /**
- * Importación de Rutas.
+ * Importación de Enrutadores de Endpoints.
  */
 import default_Route from './routes/default_Route';
 import usersRouter from './routes/users_Route';
+import enterprisesRouter from './routes/enterprises_Route';
+import rolesRouter from './routes/roles_Route';
 import authRouter from './routes/auth_Route';
 
 class App {
@@ -51,28 +53,30 @@ class App {
     }
 
     /**
-     * Available Routes API.
+     * Manejo de Enrutadores API.
      */
     private routes(): void {
         /**
-         * Public Routes.
+         * Rutas Publicas.
          */
         this.app.use('/api/v1', default_Route);
         this.app.use('/api/v1', authRouter);
 
         /**
-         * Protected Routes.
+         * Rutas Protegidas.
          */
         this.app.use('/api/v1/users', usersRouter);
+        this.app.use('/api/v1/enterprises', enterprisesRouter);
+        this.app.use('/api/v1/roles', rolesRouter);
 
         /**
-         * Not Finded Route.
+         * Manejo de Rutas Inexistentes.
          */
         this.app.use((req, res) => {
             res.status(404).json({
                 error: true,
-                error_message: 'Ruta no encontrada',
-                info_route: process.env.SV_URL + '/api/v1'
+                message: 'Ruta Inexistente',
+                API_documentation: process.env.SV_URL + '/api/v1'
             });
         });
     }

@@ -12,7 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 /**
  * MIDDLEWARE
  *
- * Validacion de usuario Admin o Vendedor
+ * Validacion de usuario con rol de Admin o Vendedor
  */
 const validateAdminOrSeller = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
@@ -21,8 +21,9 @@ const validateAdminOrSeller = (req, res, next) => __awaiter(void 0, void 0, void
     }
     else {
         return res.status(401).json({
-            error_token: true,
-            error_message: 'No tiene los permisos suficientes para realizar esta acción.'
+            error: true,
+            message: 'No tiene los permisos suficientes para realizar esta acción.',
+            data: {}
         });
     }
 });
