@@ -57,6 +57,22 @@ Usuario.init({
         type: sequelize_1.DataTypes.BOOLEAN,
         defaultValue: false,
     },
+    rol_idRol: {
+        type: sequelize_1.DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: 'tb_Roles',
+            key: 'idRol',
+        },
+    },
+    empresa_idEmpresa: {
+        type: sequelize_1.DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: 'idEmpresa',
+            key: 'idEmpresa',
+        },
+    },
 }, {
     sequelize: connection_1.default,
     modelName: 'Usuario',
@@ -64,7 +80,7 @@ Usuario.init({
     timestamps: false,
 });
 /**
- * Relaciones entre tablas
+ * Relaciones entre modelos
  */
 Usuario.belongsTo(tb_roles_1.default, { foreignKey: 'rol_idRol', as: 'rol' });
 Usuario.belongsTo(tb_empresas_1.default, { foreignKey: 'empresa_idEmpresa', as: 'empresa' });
