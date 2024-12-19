@@ -19,10 +19,12 @@ exports.roleOptionalSchema = joi_1.default.object({
         'string.base': 'El rol debe ser de tipo texto.',
         'string.min': 'El rol debe tener al menos 3 caracteres.',
         'string.max': 'El rol no puede superar los 32 caracteres.',
+        'string.empty': 'El rol no puede estar vacío.',
     }),
     descripcion: joi_1.default.string().min(4).max(128).allow(null).messages({
         'string.base': 'La Descripcion del Rol debe ser de tipo texto.',
         'string.min': 'La Descripcion del Rol debe tener al menos 4 caracteres.',
         'string.max': 'La Descripcion del Rol no puede superar los 128 caracteres.',
+        'string.empty': 'La Descripcion no puede estar vacía.',
     })
 });

@@ -110,7 +110,53 @@ class DefaultController {
                                 "descripcion": "String > 'optional'"
                             }
                         }
-                    ]
+                    ],
+                    category_routes: [
+                        {
+                            url: 'api/v1/categories/addCategory',
+                            roles: 'Administrador',
+                            methods: 'POST',
+                            header: 'auth-token',
+                            body: {
+                                "nombre": "String > 'required'",
+                                "descripcion": "String > 'required'"
+                            }
+                        },
+                        {
+                            url: 'api/v1/categories/modifyCategory',
+                            roles: 'Administrador',
+                            methods: 'PUT',
+                            header: 'auth-token',
+                            body: {
+                                "idCategoriaProducto": "Number > 'required'",
+                                "nombre": "String > 'optional'",
+                                "descripcion": "String > 'optional'"
+                            }
+                        }
+                    ],
+                    brand_routes: [
+                        {
+                            url: 'api/v1/brands/addBrand',
+                            roles: 'Administrador',
+                            methods: 'POST',
+                            header: 'auth-token',
+                            body: {
+                                "nombre": "String > 'required'",
+                                "descripcion": "String > 'required'"
+                            }
+                        },
+                        {
+                            url: 'api/v1/brands/modifyBrand',
+                            roles: 'Administrador',
+                            methods: 'PUT',
+                            header: 'auth-token',
+                            body: {
+                                "idMarcaProducto": "Number > 'required'",
+                                "nombre": "String > 'optional'",
+                                "descripcion": "String > 'optional'"
+                            }
+                        }
+                    ],
                 }
             ]
         });

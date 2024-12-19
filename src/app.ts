@@ -9,10 +9,12 @@ dotenv.config();
  * Importación de Enrutadores de Endpoints.
  */
 import default_Route from './routes/default_Route';
-import usersRouter from './routes/users_Route';
-import enterprisesRouter from './routes/enterprises_Route';
-import rolesRouter from './routes/roles_Route';
 import authRouter from './routes/auth_Route';
+import rolesRouter from './routes/roles_Route';
+import enterprisesRouter from './routes/enterprises_Route';
+import usersRouter from './routes/users_Route';
+import categoriesRouter from './routes/categories_Route';
+import brandsRouter from './routes/brands_Route';
 
 class App {
     /**
@@ -65,9 +67,11 @@ class App {
         /**
          * Rutas Protegidas.
          */
-        this.app.use('/api/v1/users', usersRouter);
-        this.app.use('/api/v1/enterprises', enterprisesRouter);
         this.app.use('/api/v1/roles', rolesRouter);
+        this.app.use('/api/v1/enterprises', enterprisesRouter);
+        this.app.use('/api/v1/users', usersRouter);
+        this.app.use('/api/v1/categories', categoriesRouter);
+        this.app.use('/api/v1/brands', brandsRouter);
 
         /**
          * Manejo de Rutas Inexistentes.

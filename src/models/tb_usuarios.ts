@@ -65,6 +65,22 @@ Usuario.init({
         type: DataTypes.BOOLEAN,
         defaultValue: false,
     },
+    rol_idRol: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: 'tb_Roles',
+            key: 'idRol',
+        },
+    },
+    empresa_idEmpresa: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: 'idEmpresa',
+            key: 'idEmpresa',
+        },
+    },
 }, {
     sequelize,
     modelName: 'Usuario',
@@ -73,7 +89,7 @@ Usuario.init({
 });
 
 /**
- * Relaciones entre tablas
+ * Relaciones entre modelos
  */
 Usuario.belongsTo(Rol, { foreignKey: 'rol_idRol', as: 'rol' });
 Usuario.belongsTo(Empresa, { foreignKey: 'empresa_idEmpresa', as: 'empresa' });
