@@ -13,10 +13,12 @@ dotenv_1.default.config();
  * Importación de Enrutadores de Endpoints.
  */
 const default_Route_1 = __importDefault(require("./routes/default_Route"));
-const users_Route_1 = __importDefault(require("./routes/users_Route"));
-const enterprises_Route_1 = __importDefault(require("./routes/enterprises_Route"));
-const roles_Route_1 = __importDefault(require("./routes/roles_Route"));
 const auth_Route_1 = __importDefault(require("./routes/auth_Route"));
+const roles_Route_1 = __importDefault(require("./routes/roles_Route"));
+const enterprises_Route_1 = __importDefault(require("./routes/enterprises_Route"));
+const users_Route_1 = __importDefault(require("./routes/users_Route"));
+const categories_Route_1 = __importDefault(require("./routes/categories_Route"));
+const brands_Route_1 = __importDefault(require("./routes/brands_Route"));
 class App {
     constructor() {
         this.app = (0, express_1.default)();
@@ -60,9 +62,11 @@ class App {
         /**
          * Rutas Protegidas.
          */
-        this.app.use('/api/v1/users', users_Route_1.default);
-        this.app.use('/api/v1/enterprises', enterprises_Route_1.default);
         this.app.use('/api/v1/roles', roles_Route_1.default);
+        this.app.use('/api/v1/enterprises', enterprises_Route_1.default);
+        this.app.use('/api/v1/users', users_Route_1.default);
+        this.app.use('/api/v1/categories', categories_Route_1.default);
+        this.app.use('/api/v1/brands', brands_Route_1.default);
         /**
          * Manejo de Rutas Inexistentes.
          */
