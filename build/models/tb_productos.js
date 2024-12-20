@@ -31,11 +31,11 @@ Producto.init({
     },
     precio_compra: {
         type: sequelize_1.DataTypes.DECIMAL(7, 2),
-        allowNull: false,
+        allowNull: true,
     },
     precio_venta: {
         type: sequelize_1.DataTypes.DECIMAL(7, 2),
-        allowNull: false,
+        allowNull: true,
     },
     fecha_creacion: {
         type: sequelize_1.DataTypes.DATE,
@@ -44,10 +44,10 @@ Producto.init({
     },
     stock: {
         type: sequelize_1.DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
     },
     imagen: {
-        type: sequelize_1.DataTypes.BLOB('long'),
+        type: sequelize_1.DataTypes.STRING,
         allowNull: false,
     },
     isActive: {

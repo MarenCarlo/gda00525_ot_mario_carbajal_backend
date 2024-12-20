@@ -40,11 +40,11 @@ Producto.init({
     },
     precio_compra: {
         type: DataTypes.DECIMAL(7, 2),
-        allowNull: false,
+        allowNull: true,
     },
     precio_venta: {
         type: DataTypes.DECIMAL(7, 2),
-        allowNull: false,
+        allowNull: true,
     },
     fecha_creacion: {
         type: DataTypes.DATE,
@@ -53,10 +53,10 @@ Producto.init({
     },
     stock: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
     },
     imagen: {
-        type: DataTypes.BLOB('long'),
+        type: DataTypes.STRING,
         allowNull: false,
     },
     isActive: {
