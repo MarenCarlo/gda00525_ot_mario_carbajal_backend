@@ -21,6 +21,7 @@ class DefaultController {
                 {
                     url: 'api/v1/LogIn',
                     methods: 'POST',
+                    "Content-Type": 'application/json',
                     body: {
                         username: "String > 'required' (acepta Username o Email)",
                         passphrase: "String > 'required'"
@@ -36,6 +37,7 @@ class DefaultController {
                             roles: 'Administrador | Vendedor',
                             methods: 'POST',
                             header: 'auth-token',
+                            "Content-Type": 'application/json',
                             body: {
                                 "nombre_completo": "String > 'required'",
                                 "username": "String > 'required'",
@@ -54,6 +56,7 @@ class DefaultController {
                             roles: 'Administrador',
                             methods: 'PUT',
                             header: 'auth-token',
+                            "Content-Type": 'application/json',
                             body: {
                                 "idUsuario": "Number > 'required'",
                                 "nombre_completo": "String > 'optional'",
@@ -75,6 +78,7 @@ class DefaultController {
                             roles: 'Administrador | Vendedor',
                             methods: 'POST',
                             header: 'auth-token',
+                            "Content-Type": 'application/json',
                             body: {
                                 "razon_social": "String > 'required'",
                                 "nombre_comercial": "String > 'required'",
@@ -88,6 +92,7 @@ class DefaultController {
                             roles: 'Administrador',
                             methods: 'PUT',
                             header: 'auth-token',
+                            "Content-Type": 'application/json',
                             body: {
                                 "idEmpresa": "Number > 'required'",
                                 "razon_social": "String > 'optional'",
@@ -104,6 +109,7 @@ class DefaultController {
                             roles: 'Administrador (con Tag de SuperUser === 1 en BD)',
                             methods: 'PUT',
                             header: 'auth-token',
+                            "Content-Type": 'application/json',
                             body: {
                                 "idRol": "Number > 'required'",
                                 "rol": "String > 'optional'",
@@ -117,6 +123,7 @@ class DefaultController {
                             roles: 'Administrador',
                             methods: 'POST',
                             header: 'auth-token',
+                            "Content-Type": 'application/json',
                             body: {
                                 "nombre": "String > 'required'",
                                 "descripcion": "String > 'required'"
@@ -127,6 +134,7 @@ class DefaultController {
                             roles: 'Administrador',
                             methods: 'PUT',
                             header: 'auth-token',
+                            "Content-Type": 'application/json',
                             body: {
                                 "idCategoriaProducto": "Number > 'required'",
                                 "nombre": "String > 'optional'",
@@ -140,6 +148,7 @@ class DefaultController {
                             roles: 'Administrador',
                             methods: 'POST',
                             header: 'auth-token',
+                            "Content-Type": 'application/json',
                             body: {
                                 "nombre": "String > 'required'",
                                 "descripcion": "String > 'required'"
@@ -150,12 +159,80 @@ class DefaultController {
                             roles: 'Administrador',
                             methods: 'PUT',
                             header: 'auth-token',
+                            "Content-Type": 'application/json',
                             body: {
                                 "idMarcaProducto": "Number > 'required'",
                                 "nombre": "String > 'optional'",
                                 "descripcion": "String > 'optional'"
                             }
                         }
+                    ],
+                    product_routes: [
+                        {
+                            url: 'api/v1/products/addProduct',
+                            roles: 'Administrador',
+                            methods: 'POST',
+                            header: 'auth-token',
+                            "Content-Type": 'multipart/form-data',
+                            "multipart-body": [{
+                                    jsonData: {
+                                        "codigo": "String > 'required'",
+                                        "nombre": "String > 'required'",
+                                        "descripcion": "String > 'required'",
+                                        "categoria_idCategoria": "Number > 'required'",
+                                        "marca_idMarca": "Number > 'required'"
+                                    },
+                                    image: {
+                                        "image": "File > 'required' (png, jpeg y webp)"
+                                    }
+                                }]
+                        },
+                        {
+                            url: 'api/v1/products/modifyProduct',
+                            roles: 'Administrador',
+                            methods: 'PUT',
+                            header: 'auth-token',
+                            "Content-Type": 'multipart/form-data',
+                            "multipart-body": [{
+                                    jsonData: {
+                                        "idProducto": "Number > 'optional'",
+                                        "codigo": "String > 'optional'",
+                                        "nombre": "String > 'optional'",
+                                        "descripcion": "String > 'optional'",
+                                        "categoria_idCategoria": "Number > 'optional'",
+                                        "marca_idMarca": "Number > 'optional'"
+                                    },
+                                    image: {
+                                        "image": "File > 'optional' (png, jpeg y webp)"
+                                    }
+                                }]
+                        },
+                        {
+                            url: 'api/v1/products/modifyStockEntry',
+                            roles: 'Administrador',
+                            methods: 'POST',
+                            header: 'auth-token',
+                            "Content-Type": 'application/json',
+                            body: {
+                                "cantidad": "Number > 'required'",
+                                "precio_compra": "Decimal > 'required'",
+                                "precio_venta": "Decimal > 'required'",
+                                "producto_idProducto": "Number > 'required'",
+                            },
+                        },
+                        {
+                            url: 'api/v1/products/modifyStockEntry',
+                            roles: 'Administrador (con Tag de SuperUser === 1 en BD)',
+                            methods: 'PUT',
+                            header: 'auth-token',
+                            "Content-Type": 'application/json',
+                            body: {
+                                "idIngresoStock": "Number > 'required'",
+                                "cantidad": "Number > 'optional'",
+                                "precio_compra": "Decimal > 'optional'",
+                                "precio_venta": "Decimal > 'optional'"
+                            },
+                        },
                     ],
                 }
             ]

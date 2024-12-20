@@ -64,6 +64,24 @@ class RolesController {
                     data: {},
                 });
             } catch (error: any) {
+                /**
+                 * Condiciones de Datos Duplicados en restricciones de
+                 * UNIQUE
+                 */
+                if (error.name === 'SequelizeUniqueConstraintError') {
+                    const uniqueError = error.errors[0];
+                    const conflictingValue = uniqueError?.value
+                    if (uniqueError?.message.includes('must be unique')) {
+                        return res.status(409).json({
+                            error: true,
+                            message: `${conflictingValue} ya existe en DB.`,
+                            data: {}
+                        });
+                    }
+                }
+                /**
+                 * Manejo de Errores generales de la BD.
+                 */
                 return res.status(500).json({
                     error: true,
                     message: 'Hay problemas al procesar la solicitud.',

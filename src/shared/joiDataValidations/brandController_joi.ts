@@ -25,6 +25,7 @@ export const brandOptionalSchema = Joi.object({
         'number.base': 'El id debe ser un valor numérico.',
         'number.integer': 'El id debe ser un número entero.',
         'number.min': 'El id debe ser mayor o igual a 1.',
+        'string.empty': 'El id no puede estar vacío.',
         'any.required': 'El Identificador es Obligatorio.',
     }),
     nombre: Joi.string().min(3).max(32).allow(null).messages({

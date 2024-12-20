@@ -3,6 +3,7 @@ import morgan from 'morgan';
 import helmet from 'helmet';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 dotenv.config();
 
 /**
@@ -15,6 +16,7 @@ import enterprisesRouter from './routes/enterprises_Route';
 import usersRouter from './routes/users_Route';
 import categoriesRouter from './routes/categories_Route';
 import brandsRouter from './routes/brands_Route';
+import productsRouter from './routes/products_Route';
 
 class App {
     /**
@@ -38,6 +40,10 @@ class App {
         this.app.use(express.urlencoded({ extended: false }));
         this.app.use(helmet());
 
+        // Ruta para archivos Estaticos: IMAGENES DE PRODUCTOS.
+        this.app.use('/images/products', express.static(path.join(__dirname, '../images/products')));
+        //this.app.use('/images/products', express.static(path.join(__dirname, 'images/products')));
+
         // Configuraciones CORS para uso de Whitelist
         const whiteList = [process.env.CR_DOMAIN_1];
         var corsOptions = {
@@ -53,6 +59,8 @@ class App {
         }
         this.app.use(cors(corsOptions));
     }
+
+
 
     /**
      * Manejo de Enrutadores API.
@@ -72,6 +80,7 @@ class App {
         this.app.use('/api/v1/users', usersRouter);
         this.app.use('/api/v1/categories', categoriesRouter);
         this.app.use('/api/v1/brands', brandsRouter);
+        this.app.use('/api/v1/products', productsRouter);
 
         /**
          * Manejo de Rutas Inexistentes.

@@ -9,10 +9,11 @@ const joi_1 = __importDefault(require("joi"));
  * Validaciones de Datos ingresados por los usuarios.
  */
 exports.roleOptionalSchema = joi_1.default.object({
-    idRol: joi_1.default.number().integer().min(1).messages({
+    idRol: joi_1.default.number().integer().min(1).required().messages({
         'number.base': 'El id debe ser un valor numérico.',
         'number.integer': 'El id debe ser un número entero.',
         'number.min': 'El id debe ser mayor o igual a 1.',
+        'string.empty': 'El id no puede estar vacío.',
         'any.required': 'El Identificador es Obligatorio.',
     }),
     rol: joi_1.default.string().min(3).max(32).allow(null).messages({
