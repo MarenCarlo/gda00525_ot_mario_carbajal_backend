@@ -60,9 +60,6 @@ export const productOptionalSchema = Joi.object({
         'string.max': 'La descripción no puede superar los 128 caracteres.',
         'string.empty': 'La descripción no puede estar vacía.',
     }),
-    isActive: Joi.boolean().allow(null).messages({
-        'boolean.base': 'El estado debe ser un valor booleano.',
-    }),
     categoria_idCategoria: Joi.number().integer().allow(null).messages({
         'number.base': 'La categoría debe ser un número.',
         'number.integer': 'La categoría debe ser un número entero.',
@@ -135,3 +132,17 @@ export const ingressOptionalSchema = Joi.object({
         'number.min': 'El precio de venta debe ser al menos de 1.00.',
     }),
 })
+
+export const productStatusSchema = Joi.object({
+    idProducto: Joi.number().integer().min(1).required().messages({
+        'number.base': 'El id debe ser un valor numérico.',
+        'number.integer': 'El id debe ser un número entero.',
+        'number.min': 'El id debe ser mayor o igual a 1.',
+        'string.empty': 'El id no puede estar vacío.',
+        'any.required': 'El Identificador es Obligatorio.',
+    }),
+    isActive: Joi.boolean().required().messages({
+        'boolean.base': 'El estado debe ser un valor booleano.',
+        'any.required': 'El estado es Obligatorio.',
+    })
+});

@@ -7,13 +7,11 @@ import { Request } from 'express';
  */
 const storage: StorageEngine = multer.diskStorage({
     destination: (req: Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
-        // Asegúrate de que la ruta de destino sea un string y no undefined
-        cb(null, path.join(__dirname, '../../images/products')); // Cambia según tu estructura
+        cb(null, path.join(__dirname, '../../images/products'));
     },
     filename: (req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        // Asegúrate de que el nombre del archivo sea un string
-        cb(null, uniqueSuffix + path.extname(file.originalname)); // Nombre único
+        cb(null, uniqueSuffix + path.extname(file.originalname));
     },
 });
 

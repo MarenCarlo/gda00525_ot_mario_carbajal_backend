@@ -21,6 +21,7 @@ class ProductsRouter {
         this.router.put('/modifyProduct', validate_token_1.default, validate_admin_1.default, products_Controller_1.productsController.modifyProduct);
         this.router.post('/addStockEntry', validate_token_1.default, validate_admin_1.default, products_Controller_1.productsController.addStockIngreso);
         this.router.put('/modifyStockEntry', validate_token_1.default, validate_admin_1.default, validate_superUser_1.default, products_Controller_1.productsController.modifyStockIngreso);
+        this.router.put('/modifyStatusProduct', validate_token_1.default, validate_admin_1.default, validate_superUser_1.default, products_Controller_1.productsController.modifyStatusProduct);
     }
 }
 const productsRouter = new ProductsRouter();
