@@ -11,13 +11,11 @@ const path_1 = __importDefault(require("path"));
  */
 const storage = multer_1.default.diskStorage({
     destination: (req, file, cb) => {
-        // Asegúrate de que la ruta de destino sea un string y no undefined
-        cb(null, path_1.default.join(__dirname, '../../images/products')); // Cambia según tu estructura
+        cb(null, path_1.default.join(__dirname, '../../images/products'));
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        // Asegúrate de que el nombre del archivo sea un string
-        cb(null, uniqueSuffix + path_1.default.extname(file.originalname)); // Nombre único
+        cb(null, uniqueSuffix + path_1.default.extname(file.originalname));
     },
 });
 /**

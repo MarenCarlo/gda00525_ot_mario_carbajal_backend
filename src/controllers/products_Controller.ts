@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import sequelize from '../database/connection';
 import Producto from '../models/tb_productos';
-import { ingressOptionalSchema, ingressSchema, productOptionalSchema, productSchema } from '../shared/joiDataValidations/productController_joi';
+import { ingressOptionalSchema, ingressSchema, productOptionalSchema, productSchema, productStatusSchema } from '../shared/joiDataValidations/productController_joi';
 import { upload } from '../shared/multerConfig';
 import path from 'path';
 import fs from 'fs';
@@ -81,17 +81,20 @@ class ProductsController {
                 /**
                  * Ejecucion del Procedimiento Almacenado
                  */
-                const nuevoProducto: any = await sequelize.query(
+                const result: any = await sequelize.query(
                     'EXEC sp_Crear_Producto :codigo, :nombre, :descripcion, :imagen, :isActive, :categoria_idCategoria, :marca_idMarca;',
                     {
                         replacements: replacements
                     }
                 );
-
+                /**
+                 * Respuesta del servidor
+                 */
+                const nuevoID = result[0][0].NuevoID;
                 return res.status(201).json({
                     error: false,
                     message: 'Producto agregado exitosamente',
-                    data: { idProducto: nuevoProducto.idProducto },
+                    data: { nuevoID },
                 });
             } catch (error: any) {
                 if (req.file) {
@@ -157,7 +160,6 @@ class ProductsController {
                 codigo = null,
                 nombre = null,
                 descripcion = null,
-                isActive = null,
                 categoria_idCategoria = null,
                 marca_idMarca = null,
             } = productData;
@@ -222,7 +224,7 @@ class ProductsController {
                         nombre,
                         descripcion,
                         imagen: imageUrl,
-                        isActive: isActive,
+                        isActive: null,
                         categoria_idCategoria,
                         marca_idMarca
                     };
@@ -357,7 +359,7 @@ class ProductsController {
     }
 
     /**
-     * Este Endpoint sirve para modificar un erroneo de Stock en DB.
+     * Este Endpoint sirve para modificar un ingreso erroneo de Stock en DB.
      */
     public async modifyStockIngreso(req: Request, res: Response) {
         const ip = req.socket.remoteAddress;
@@ -426,6 +428,89 @@ class ProductsController {
                 data: {
                     error
                 }
+            });
+        }
+    }
+
+    /**
+     * Este Endpoint sirve para modificar un erroneo de Stock en DB.
+     */
+    public async modifyStatusProduct(req: Request, res: Response) {
+        const ip = req.socket.remoteAddress;
+        console.info(ip);
+        //Validacion de Data ingresada por los usuarios
+        const {
+            idProducto,
+            isActive
+        } = req.body;
+        const { error } = productStatusSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({
+                error: true,
+                message: error.details[0].message,
+                data: {}
+            });
+        }
+        // Validacion si idProducto no es un número o es <= 0
+        if (typeof idProducto === 'number' && !isNaN(idProducto) && idProducto > 0) {
+            try {
+                // Búsqueda de la existencia del producto a modificar
+                let productoDB: any = await Producto.findOne({
+                    where: {
+                        idProducto: idProducto
+                    },
+                });
+                if (!productoDB) {
+                    return res.status(404).json({
+                        error: true,
+                        message: 'El ID del producto que se intenta modificar, no existe en DB.',
+                        data: {},
+                    });
+                }
+
+                // OBJETO DE DATOS MSSQLs
+                const replacements: any = {
+                    idProducto,
+                    codigo: null,
+                    nombre: null,
+                    descripcion: null,
+                    imagen: null,
+                    isActive: isActive,
+                    categoria_idCategoria: null,
+                    marca_idMarca: null
+                };
+                /**
+                 * Ejecucion del Procedimiento Almacenado
+                 */
+                await sequelize.query(
+                    'EXEC sp_Editar_Producto :idProducto, :codigo, :nombre, :descripcion, :imagen, :isActive, :categoria_idCategoria, :marca_idMarca;',
+                    {
+                        replacements: replacements
+                    }
+                );
+
+                return res.status(201).json({
+                    error: false,
+                    message: 'Data de Producto modificada exitosamente.',
+                    data: {},
+                });
+            } catch (error: any) {
+                /**
+                 * Manejo de Errores generales de la BD.
+                 */
+                return res.status(500).json({
+                    error: true,
+                    message: 'Hay problemas al procesar la solicitud.',
+                    data: {
+                        error
+                    }
+                });
+            }
+        } else {
+            return res.status(404).json({
+                error: true,
+                message: "Id de Producto no valido.",
+                data: {}
             });
         }
     }

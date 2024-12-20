@@ -233,6 +233,17 @@ class DefaultController {
                                 "precio_venta": "Decimal > 'optional'"
                             },
                         },
+                        {
+                            url: 'api/v1/products/modifyStatusProduct',
+                            roles: 'Administrador (con Tag de SuperUser === 1 en BD)',
+                            methods: 'PUT',
+                            header: 'auth-token',
+                            "Content-Type": 'application/json',
+                            body: {
+                                "idProducto": "Number > 'optional'",
+                                "isActive": "Boolean > 'optional'"
+                            }
+                        },
                     ],
                 }
             ]

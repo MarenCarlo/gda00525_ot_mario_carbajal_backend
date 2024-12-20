@@ -18,6 +18,7 @@ class ProductsRouter {
         this.router.put('/modifyProduct', validateToken, validateAdmin, productsController.modifyProduct);
         this.router.post('/addStockEntry', validateToken, validateAdmin, productsController.addStockIngreso);
         this.router.put('/modifyStockEntry', validateToken, validateAdmin, validateSuperUser, productsController.modifyStockIngreso);
+        this.router.put('/modifyStatusProduct', validateToken, validateAdmin, validateSuperUser, productsController.modifyStatusProduct);
     }
 }
 

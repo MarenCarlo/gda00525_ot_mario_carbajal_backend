@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ingressOptionalSchema = exports.ingressSchema = exports.productOptionalSchema = exports.productSchema = void 0;
+exports.productStatusSchema = exports.ingressOptionalSchema = exports.ingressSchema = exports.productOptionalSchema = exports.productSchema = void 0;
 const joi_1 = __importDefault(require("joi"));
 exports.productSchema = joi_1.default.object({
     codigo: joi_1.default.string().max(8).required().messages({
@@ -63,9 +63,6 @@ exports.productOptionalSchema = joi_1.default.object({
         'string.min': 'La descripción debe tener al menos 4 caracteres.',
         'string.max': 'La descripción no puede superar los 128 caracteres.',
         'string.empty': 'La descripción no puede estar vacía.',
-    }),
-    isActive: joi_1.default.boolean().allow(null).messages({
-        'boolean.base': 'El estado debe ser un valor booleano.',
     }),
     categoria_idCategoria: joi_1.default.number().integer().allow(null).messages({
         'number.base': 'La categoría debe ser un número.',
@@ -136,4 +133,17 @@ exports.ingressOptionalSchema = joi_1.default.object({
         'number.empty': 'El precio de venta no puede estar vacío.',
         'number.min': 'El precio de venta debe ser al menos de 1.00.',
     }),
+});
+exports.productStatusSchema = joi_1.default.object({
+    idProducto: joi_1.default.number().integer().min(1).required().messages({
+        'number.base': 'El id debe ser un valor numérico.',
+        'number.integer': 'El id debe ser un número entero.',
+        'number.min': 'El id debe ser mayor o igual a 1.',
+        'string.empty': 'El id no puede estar vacío.',
+        'any.required': 'El Identificador es Obligatorio.',
+    }),
+    isActive: joi_1.default.boolean().required().messages({
+        'boolean.base': 'El estado debe ser un valor booleano.',
+        'any.required': 'El estado es Obligatorio.',
+    })
 });

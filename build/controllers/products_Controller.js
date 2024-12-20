@@ -83,13 +83,17 @@ class ProductsController {
                     /**
                      * Ejecucion del Procedimiento Almacenado
                      */
-                    const nuevoProducto = yield connection_1.default.query('EXEC sp_Crear_Producto :codigo, :nombre, :descripcion, :imagen, :isActive, :categoria_idCategoria, :marca_idMarca;', {
+                    const result = yield connection_1.default.query('EXEC sp_Crear_Producto :codigo, :nombre, :descripcion, :imagen, :isActive, :categoria_idCategoria, :marca_idMarca;', {
                         replacements: replacements
                     });
+                    /**
+                     * Respuesta del servidor
+                     */
+                    const nuevoID = result[0][0].NuevoID;
                     return res.status(201).json({
                         error: false,
                         message: 'Producto agregado exitosamente',
-                        data: { idProducto: nuevoProducto.idProducto },
+                        data: { nuevoID },
                     });
                 }
                 catch (error) {
@@ -150,7 +154,7 @@ class ProductsController {
                         data: {}
                     });
                 }
-                const { idProducto, codigo = null, nombre = null, descripcion = null, isActive = null, categoria_idCategoria = null, marca_idMarca = null, } = productData;
+                const { idProducto, codigo = null, nombre = null, descripcion = null, categoria_idCategoria = null, marca_idMarca = null, } = productData;
                 /**
                  * Manejo de Errores en subida de imagenes
                  */
@@ -210,7 +214,7 @@ class ProductsController {
                             nombre,
                             descripcion,
                             imagen: imageUrl,
-                            isActive: isActive,
+                            isActive: null,
                             categoria_idCategoria,
                             marca_idMarca
                         };
@@ -336,7 +340,7 @@ class ProductsController {
         });
     }
     /**
-     * Este Endpoint sirve para modificar un erroneo de Stock en DB.
+     * Este Endpoint sirve para modificar un ingreso erroneo de Stock en DB.
      */
     modifyStockIngreso(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -399,6 +403,84 @@ class ProductsController {
                     data: {
                         error
                     }
+                });
+            }
+        });
+    }
+    /**
+     * Este Endpoint sirve para modificar un erroneo de Stock en DB.
+     */
+    modifyStatusProduct(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const ip = req.socket.remoteAddress;
+            console.info(ip);
+            //Validacion de Data ingresada por los usuarios
+            const { idProducto, isActive } = req.body;
+            const { error } = productController_joi_1.productStatusSchema.validate(req.body);
+            if (error) {
+                return res.status(400).json({
+                    error: true,
+                    message: error.details[0].message,
+                    data: {}
+                });
+            }
+            // Validacion si idProducto no es un número o es <= 0
+            if (typeof idProducto === 'number' && !isNaN(idProducto) && idProducto > 0) {
+                try {
+                    // Búsqueda de la existencia del producto a modificar
+                    let productoDB = yield tb_productos_1.default.findOne({
+                        where: {
+                            idProducto: idProducto
+                        },
+                    });
+                    if (!productoDB) {
+                        return res.status(404).json({
+                            error: true,
+                            message: 'El ID del producto que se intenta modificar, no existe en DB.',
+                            data: {},
+                        });
+                    }
+                    // OBJETO DE DATOS MSSQLs
+                    const replacements = {
+                        idProducto,
+                        codigo: null,
+                        nombre: null,
+                        descripcion: null,
+                        imagen: null,
+                        isActive: isActive,
+                        categoria_idCategoria: null,
+                        marca_idMarca: null
+                    };
+                    /**
+                     * Ejecucion del Procedimiento Almacenado
+                     */
+                    yield connection_1.default.query('EXEC sp_Editar_Producto :idProducto, :codigo, :nombre, :descripcion, :imagen, :isActive, :categoria_idCategoria, :marca_idMarca;', {
+                        replacements: replacements
+                    });
+                    return res.status(201).json({
+                        error: false,
+                        message: 'Data de Producto modificada exitosamente.',
+                        data: {},
+                    });
+                }
+                catch (error) {
+                    /**
+                     * Manejo de Errores generales de la BD.
+                     */
+                    return res.status(500).json({
+                        error: true,
+                        message: 'Hay problemas al procesar la solicitud.',
+                        data: {
+                            error
+                        }
+                    });
+                }
+            }
+            else {
+                return res.status(404).json({
+                    error: true,
+                    message: "Id de Producto no valido.",
+                    data: {}
                 });
             }
         });
