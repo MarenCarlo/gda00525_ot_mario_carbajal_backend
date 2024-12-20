@@ -78,10 +78,11 @@ exports.userSchema = joi_1.default.object({
     }),
 });
 exports.userStateSchema = joi_1.default.object({
-    idUsuario: joi_1.default.number().integer().min(1).messages({
-        'number.base': 'El Identificador debe ser un valor numérico.',
-        'number.integer': 'El Identificador debe ser un número entero.',
-        'number.min': 'El Identificador debe ser mayor o igual a 1.',
+    idUsuario: joi_1.default.number().integer().min(1).required().messages({
+        'number.base': 'El id debe ser un valor numérico.',
+        'number.integer': 'El id debe ser un número entero.',
+        'number.min': 'El id debe ser mayor o igual a 1.',
+        'string.empty': 'El id no puede estar vacío.',
         'any.required': 'El Identificador es Obligatorio.',
     }),
     nombre_completo: joi_1.default.string().min(3).max(255).allow(null).messages({

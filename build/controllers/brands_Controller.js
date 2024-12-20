@@ -54,7 +54,7 @@ class BrandsController {
                 /**
                  * Respuesta del servidor
                  */
-                const nuevoID = result[0].NuevoID;
+                const nuevoID = result[0][0].NuevoID;
                 return res.status(201).json({
                     error: false,
                     message: 'Marca agregada exitosamente.',
@@ -151,6 +151,24 @@ class BrandsController {
                     });
                 }
                 catch (error) {
+                    /**
+                     * Condiciones de Datos Duplicados en restricciones de
+                     * UNIQUE
+                     */
+                    if (error.name === 'SequelizeUniqueConstraintError') {
+                        const uniqueError = error.errors[0];
+                        const conflictingValue = uniqueError === null || uniqueError === void 0 ? void 0 : uniqueError.value;
+                        if (uniqueError === null || uniqueError === void 0 ? void 0 : uniqueError.message.includes('must be unique')) {
+                            return res.status(409).json({
+                                error: true,
+                                message: `${conflictingValue} ya existe en DB.`,
+                                data: {}
+                            });
+                        }
+                    }
+                    /**
+                     * Manejo de Errores generales de la BD.
+                     */
                     return res.status(500).json({
                         error: true,
                         message: 'Hay problemas al procesar la solicitud.',

@@ -10,14 +10,18 @@ const products_Controller_1 = require("../controllers/products_Controller");
  */
 const validate_token_1 = __importDefault(require("../middlewares/validate_token"));
 const validate_admin_1 = __importDefault(require("../middlewares/validate_admin"));
-class CategoriesRouter {
+const validate_superUser_1 = __importDefault(require("../middlewares/validate_superUser"));
+class ProductsRouter {
     constructor() {
         this.router = (0, express_1.Router)();
         this.config();
     }
     config() {
         this.router.post('/addProduct', validate_token_1.default, validate_admin_1.default, products_Controller_1.productsController.addProduct);
+        this.router.put('/modifyProduct', validate_token_1.default, validate_admin_1.default, products_Controller_1.productsController.modifyProduct);
+        this.router.post('/addStockEntry', validate_token_1.default, validate_admin_1.default, products_Controller_1.productsController.addStockIngreso);
+        this.router.put('/modifyStockEntry', validate_token_1.default, validate_admin_1.default, validate_superUser_1.default, products_Controller_1.productsController.modifyStockIngreso);
     }
 }
-const categoriesRouter = new CategoriesRouter();
-exports.default = categoriesRouter.router;
+const productsRouter = new ProductsRouter();
+exports.default = productsRouter.router;

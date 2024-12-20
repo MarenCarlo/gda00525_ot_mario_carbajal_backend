@@ -8,6 +8,7 @@ const morgan_1 = __importDefault(require("morgan"));
 const helmet_1 = __importDefault(require("helmet"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const path_1 = __importDefault(require("path"));
 dotenv_1.default.config();
 /**
  * Importación de Enrutadores de Endpoints.
@@ -19,6 +20,7 @@ const enterprises_Route_1 = __importDefault(require("./routes/enterprises_Route"
 const users_Route_1 = __importDefault(require("./routes/users_Route"));
 const categories_Route_1 = __importDefault(require("./routes/categories_Route"));
 const brands_Route_1 = __importDefault(require("./routes/brands_Route"));
+const products_Route_1 = __importDefault(require("./routes/products_Route"));
 class App {
     constructor() {
         this.app = (0, express_1.default)();
@@ -34,6 +36,9 @@ class App {
         this.app.use(express_1.default.json());
         this.app.use(express_1.default.urlencoded({ extended: false }));
         this.app.use((0, helmet_1.default)());
+        // Ruta para archivos Estaticos: IMAGENES DE PRODUCTOS.
+        this.app.use('/images/products', express_1.default.static(path_1.default.join(__dirname, '../images/products')));
+        //this.app.use('/images/products', express.static(path.join(__dirname, 'images/products')));
         // Configuraciones CORS para uso de Whitelist
         const whiteList = [process.env.CR_DOMAIN_1];
         var corsOptions = {
@@ -67,6 +72,7 @@ class App {
         this.app.use('/api/v1/users', users_Route_1.default);
         this.app.use('/api/v1/categories', categories_Route_1.default);
         this.app.use('/api/v1/brands', brands_Route_1.default);
+        this.app.use('/api/v1/products', products_Route_1.default);
         /**
          * Manejo de Rutas Inexistentes.
          */
