@@ -19,6 +19,55 @@ const bcrypt_1 = __importDefault(require("bcrypt"));
 const tb_usuarios_1 = __importDefault(require("../models/tb_usuarios"));
 class UsersController {
     /**
+    * Este Endpoint sirve para obtener usuarios o uno solo
+    */
+    getUsers(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const ip = req.socket.remoteAddress;
+            console.info(ip);
+            const { idUsuario } = req.params;
+            try {
+                let query = 'SELECT * FROM vw_Usuarios';
+                let replacements = [];
+                if (idUsuario) {
+                    if (typeof idUsuario === 'number' && !isNaN(idUsuario) && idUsuario > 0) {
+                        return res.status(400).json({
+                            error: true,
+                            message: 'El ID de usuario no es válido.',
+                            data: {}
+                        });
+                    }
+                    query += ` WHERE idUsuario = ${Number(idUsuario)}`;
+                }
+                const usuarios = yield connection_1.default.query(query, {
+                    replacements,
+                    type: 'SELECT'
+                });
+                if (!usuarios) {
+                    return res.status(404).json({
+                        error: true,
+                        message: 'No se encontraron usuarios.',
+                        data: {}
+                    });
+                }
+                return res.status(200).json({
+                    error: false,
+                    message: 'Usuarios obtenidos exitosamente.',
+                    data: usuarios
+                });
+            }
+            catch (error) {
+                return res.status(500).json({
+                    error: true,
+                    message: 'Hubo un error al obtener los usuarios.',
+                    data: {
+                        error
+                    }
+                });
+            }
+        });
+    }
+    /**
     * Este Endpoint sirve para registrar a nuevos usuarios en la APP
     */
     addUser(req, res) {

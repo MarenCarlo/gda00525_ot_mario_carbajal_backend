@@ -14,6 +14,7 @@ class RolesRouter {
         this.config();
     }
     config(): void {
+        this.router.get('/getRoles', validateToken, validateAdmin, rolesController.getRoles);
         this.router.put('/modifyRole', validateToken, validateAdmin, validateSuperUser, rolesController.modifyRole);
     }
 }

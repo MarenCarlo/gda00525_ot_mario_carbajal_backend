@@ -17,6 +17,7 @@ class EnterprisesRouter {
         this.config();
     }
     config() {
+        this.router.get('/getEnterprises/:idEmpresa?', validate_token_1.default, validate_adminOrSeller_1.default, enterprises_Controller_1.enterprisesController.getEnterprises);
         this.router.post('/addEnterprise', validate_token_1.default, validate_adminOrSeller_1.default, enterprises_Controller_1.enterprisesController.addEnterprise);
         this.router.put('/modifyEnterprise', validate_token_1.default, validate_admin_1.default, enterprises_Controller_1.enterprisesController.modifyEnterprise);
     }

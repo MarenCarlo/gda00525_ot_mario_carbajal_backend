@@ -21,6 +21,79 @@ const tb_ordenes_1 = __importDefault(require("../models/tb_ordenes"));
 const tb_detalles_orden_1 = __importDefault(require("../models/tb_detalles_orden"));
 class OrdersController {
     /**
+    * Este Endpoint sirve para obtener las ordenes y sus respectivos detalles
+    * o una sola
+    */
+    getOrders(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const ip = req.socket.remoteAddress;
+            console.info(ip);
+            const { idOrden } = req.params;
+            try {
+                /**
+                 * OBTENCION DE ORDENES
+                 */
+                let query1 = 'SELECT * FROM vw_Ordenes';
+                let query2 = 'SELECT * FROM vw_Detalles_Orden';
+                let replacements = [];
+                if (idOrden) {
+                    if (typeof idOrden === 'number' && !isNaN(idOrden) && idOrden > 0) {
+                        return res.status(400).json({
+                            error: true,
+                            message: 'El ID de producto no es válido.',
+                            data: {}
+                        });
+                    }
+                    query1 += ` WHERE idOrden = ${Number(idOrden)}`;
+                    query2 += ` WHERE orden_idOrden = ${Number(idOrden)}`;
+                }
+                query1 += ` ORDER BY fecha_creacion DESC;`;
+                const ordenes = yield connection_1.default.query(query1, {
+                    replacements,
+                    type: 'SELECT'
+                });
+                if (!ordenes || ordenes === null) {
+                    return res.status(404).json({
+                        error: true,
+                        message: 'No se encontraron ordenes.',
+                        data: {}
+                    });
+                }
+                /**
+                 * OBTENCION DE DETALLES DE ORDENES
+                 */
+                const ordenesDetalles = yield connection_1.default.query(query2, {
+                    replacements,
+                    type: 'SELECT'
+                });
+                /**
+                 * SETEO DE OBJETO DE ORDENES
+                 * CON SUS RESPECTIVOS DETALLES
+                 */
+                const ordenesDetalladas = ordenes.map((orden) => {
+                    return Object.assign(Object.assign({}, orden), { detalles: ordenesDetalles.filter((detalle) => detalle.orden_idOrden === orden.idOrden) });
+                });
+                return res.status(200).json({
+                    error: false,
+                    message: 'Ordenes obtenidas exitosamente.',
+                    data: {
+                        ordenesDetalladas
+                    }
+                });
+            }
+            catch (error) {
+                console.log(error);
+                return res.status(500).json({
+                    error: true,
+                    message: 'Hubo un error al obtener las ordenes.',
+                    data: {
+                        error
+                    }
+                });
+            }
+        });
+    }
+    /**
      * Este Endpoint sirve para registrar nuevas órdenes en la APP
      */
     addOrder(req, res) {
