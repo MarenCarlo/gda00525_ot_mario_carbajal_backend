@@ -16,6 +16,7 @@ class CategoriesRouter {
         this.config();
     }
     config() {
+        this.router.get('/getCategories', validate_token_1.default, categories_Controller_1.categoriesController.getCategories);
         this.router.post('/addCategory', validate_token_1.default, validate_admin_1.default, categories_Controller_1.categoriesController.addCategory);
         this.router.put('/modifyCategory', validate_token_1.default, validate_admin_1.default, categories_Controller_1.categoriesController.modifyCategory);
     }

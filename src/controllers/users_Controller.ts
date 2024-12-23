@@ -7,6 +7,54 @@ import Usuario from '../models/tb_usuarios';
 class UsersController {
 
     /**
+    * Este Endpoint sirve para obtener usuarios o uno solo
+    */
+    public async getUsers(req: Request, res: Response) {
+        const ip = req.socket.remoteAddress;
+        console.info(ip);
+        const { idUsuario } = req.params;
+        try {
+            let query = 'SELECT * FROM vw_Usuarios';
+            let replacements: any = [];
+            if (idUsuario) {
+                if (typeof idUsuario === 'number' && !isNaN(idUsuario) && idUsuario > 0) {
+                    return res.status(400).json({
+                        error: true,
+                        message: 'El ID de usuario no es válido.',
+                        data: {}
+                    });
+                }
+                query += ` WHERE idUsuario = ${Number(idUsuario)}`;
+            }
+            const usuarios = await sequelize.query(query, {
+                replacements,
+                type: 'SELECT'
+            });
+            if (!usuarios) {
+                return res.status(404).json({
+                    error: true,
+                    message: 'No se encontraron usuarios.',
+                    data: {}
+                });
+            }
+            return res.status(200).json({
+                error: false,
+                message: 'Usuarios obtenidos exitosamente.',
+                data: usuarios
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                error: true,
+                message: 'Hubo un error al obtener los usuarios.',
+                data: {
+                    error
+                }
+            });
+        }
+    }
+
+
+    /**
     * Este Endpoint sirve para registrar a nuevos usuarios en la APP
     */
     public async addUser(req: Request, res: Response) {

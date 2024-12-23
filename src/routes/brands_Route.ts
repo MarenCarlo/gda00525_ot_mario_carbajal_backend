@@ -13,6 +13,7 @@ class BrandsRouter {
         this.config();
     }
     config(): void {
+        this.router.get('/getBrands', validateToken, brandsController.getBrands);
         this.router.post('/addBrand', validateToken, validateAdmin, brandsController.addBrand);
         this.router.put('/modifyBrand', validateToken, validateAdmin, brandsController.modifyBrand);
     }

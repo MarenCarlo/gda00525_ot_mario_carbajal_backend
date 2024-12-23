@@ -6,6 +6,63 @@ import Empresa from '../models/tb_empresas';
 class EnterprisesController {
 
     /**
+    * Este Endpoint sirve para obtener empresas o una sola
+    */
+    public async getEnterprises(req: Request, res: Response) {
+        const ip = req.socket.remoteAddress;
+        console.info(ip);
+        const { idEmpresa } = req.params;
+        try {
+            if (idEmpresa) {
+                if (typeof idEmpresa === 'number' && !isNaN(idEmpresa) && idEmpresa > 0) {
+                    return res.status(400).json({
+                        error: true,
+                        message: 'El ID de empresa no es válido.',
+                        data: {}
+                    });
+                }
+                const empresa = await Empresa.findOne({
+                    where: { idEmpresa: Number(idEmpresa) }
+                });
+                if (!empresa) {
+                    return res.status(404).json({
+                        error: true,
+                        message: 'La empresa no existe en DB.',
+                        data: {}
+                    });
+                }
+                return res.status(200).json({
+                    error: false,
+                    message: 'Empresa obtenida exitosamente.',
+                    data: empresa
+                });
+            } else {
+                const empresas = await Empresa.findAll();
+                if (!empresas || empresas.length === 0) {
+                    return res.status(404).json({
+                        error: true,
+                        message: 'No se encontraron empresas.',
+                        data: {}
+                    });
+                }
+                return res.status(200).json({
+                    error: false,
+                    message: 'Empresas obtenidas exitosamente.',
+                    data: empresas
+                });
+            }
+        } catch (error: any) {
+            return res.status(500).json({
+                error: true,
+                message: 'Hubo un error al obtener las empresas.',
+                data: {
+                    error
+                }
+            });
+        }
+    }
+
+    /**
     * Este Endpoint sirve para registrar nuevas empresas en la APP
     */
     public async addEnterprise(req: Request, res: Response) {

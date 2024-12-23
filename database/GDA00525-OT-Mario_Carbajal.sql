@@ -598,6 +598,163 @@ GO
 	Creacion de Views de tablas
 **/
 
+-- VIEW: Tabla Usuarios.
+CREATE VIEW vw_Usuarios AS
+SELECT
+    usr.idUsuario,
+    usr.nombre_completo,
+    rol.rol,
+	CASE 
+        WHEN usr.isSuperUser = 1 THEN 'Activo'
+        ELSE 'N/A'
+    END AS isSuperUser,
+    usr.telefono,
+    usr.email,
+    emp.nombre_comercial AS empresa,
+    CASE 
+        WHEN usr.isActive = 1 THEN 'Activo'
+        ELSE 'Desactivado'
+    END AS isActive,
+	usr.direccion
+FROM
+    tb_Usuarios usr
+INNER JOIN 
+    tb_Roles rol ON usr.rol_idRol = rol.idRol
+INNER JOIN 
+    tb_Empresas emp ON usr.empresa_idEmpresa = emp.idEmpresa;
+GO
+
+-- VIEW: Tabla Productos con informacion interna.
+CREATE VIEW vw_Productos_Internos AS
+SELECT
+    pro.idProducto,
+    pro.codigo,
+    pro.nombre,
+    pro.descripcion,
+    cat.nombre AS categoria,
+    mrc.nombre AS marca,
+    pro.imagen,
+    CASE 
+        WHEN pro.isActive = 1 THEN 'Activo'
+        ELSE 'Desactivado'
+    END AS isActive,
+    pro.stock,
+    pro.precio_compra,
+    pro.precio_venta,
+    SUM(pro.stock * (pro.precio_compra)) AS inversion
+FROM
+    tb_Productos pro
+INNER JOIN 
+    tb_Marcas_Productos mrc ON pro.marca_idMarca = mrc.idMarcaProducto
+INNER JOIN 
+    tb_Categorias_Productos cat ON pro.categoria_idCategoria = cat.idCategoriaProducto
+GROUP BY 
+    pro.idProducto, 
+    pro.codigo,
+    pro.nombre,
+    pro.descripcion,
+    pro.imagen,
+    pro.isActive,
+    pro.stock,
+    pro.precio_compra,
+    pro.precio_venta,
+    mrc.nombre,
+    cat.nombre;
+GO
+
+-- VIEW: Tabla Productos con informacion publica.
+CREATE VIEW vw_Productos_Publico AS
+SELECT
+    pro.idProducto,
+    pro.codigo,
+    pro.nombre,
+    pro.descripcion,
+    cat.nombre AS categoria,
+    mrc.nombre AS marca,
+    pro.imagen,
+    pro.precio_venta AS precio
+FROM
+    tb_Productos pro
+INNER JOIN 
+    tb_Marcas_Productos mrc ON pro.marca_idMarca = mrc.idMarcaProducto
+INNER JOIN 
+    tb_Categorias_Productos cat ON pro.categoria_idCategoria = cat.idCategoriaProducto
+WHERE 
+	pro.isActive = 1
+GROUP BY 
+    pro.idProducto, 
+    pro.codigo,
+    pro.nombre,
+    pro.descripcion,
+    pro.imagen,
+    pro.isActive,
+    pro.stock,
+    pro.precio_compra,
+    pro.precio_venta,
+    mrc.nombre,
+    cat.nombre;
+GO
+
+-- VIEW: Tabla Ingresos.
+CREATE VIEW vw_Ingresos_Stock AS
+SELECT
+    ing.idIngresoStock,
+    ing.cantidad,
+    pro.codigo,
+    pro.nombre,
+    ing.precio_compra,
+    ing.precio_venta,
+	pro.idProducto,
+	pro.isActive,
+	pro.marca_idMarca,
+	pro.categoria_idCategoria,
+	ing.fecha_creacion
+FROM
+    tb_Ingresos_Productos_Stock ing
+INNER JOIN 
+    tb_Productos pro ON ing.producto_idProducto = pro.idProducto;
+GO
+
+-- VIEW: Tabla Ordenes.
+CREATE VIEW vw_Ordenes AS
+SELECT
+	ord.idOrden,
+	ord.fecha_creacion,
+	ord.total_orden,
+	usC.nombre_completo AS cliente,
+	emC.nit AS nit_cliente,
+	usC.direccion AS direccion_cliente,
+	usV.nombre_completo AS vendedor,
+	emV.nit AS nit_venta,
+	usV.direccion AS direccion_venta
+FROM
+    tb_Ordenes ord
+INNER JOIN 
+    tb_Usuarios usC ON ord.usuarioCliente_idUsuario = usC.idUsuario
+INNER JOIN 
+    tb_Empresas emC ON usC.empresa_idEmpresa = emC.idEmpresa
+LEFT JOIN
+	tb_Usuarios usV ON ord.usuarioVendedor_idUsuario = usV.idUsuario
+LEFT JOIN 
+    tb_Empresas emV ON usV.empresa_idEmpresa = emV.idEmpresa;
+GO
+
+-- VIEW: Tabla Detalle Ordenes.
+CREATE VIEW vw_Detalles_Orden AS
+SELECT
+	det.idDetalleOrden,
+	det.cantidad,
+	pro.codigo,
+	pro.nombre,
+	det.subtotal,
+	det.orden_idOrden
+FROM
+    tb_Detalles_Orden det
+INNER JOIN 
+    tb_Productos pro ON det.producto_idProducto = pro.idProducto;
+GO
+
+-- VIEWS ANTERIORES DEL RETO MSSQL.
 --A CREACION DE LA VISTA PARA PRODUCTOS ACTIVOS CON STOCK MAYOR A 0
 CREATE VIEW vw_Productos_Activos AS
 SELECT 
