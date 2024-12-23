@@ -21,6 +21,7 @@ const users_Route_1 = __importDefault(require("./routes/users_Route"));
 const categories_Route_1 = __importDefault(require("./routes/categories_Route"));
 const brands_Route_1 = __importDefault(require("./routes/brands_Route"));
 const products_Route_1 = __importDefault(require("./routes/products_Route"));
+const orders_Route_1 = __importDefault(require("./routes/orders_Route"));
 class App {
     constructor() {
         this.app = (0, express_1.default)();
@@ -73,6 +74,7 @@ class App {
         this.app.use('/api/v1/categories', categories_Route_1.default);
         this.app.use('/api/v1/brands', brands_Route_1.default);
         this.app.use('/api/v1/products', products_Route_1.default);
+        this.app.use('/api/v1/orders', orders_Route_1.default);
         /**
          * Manejo de Rutas Inexistentes.
          */

@@ -17,6 +17,7 @@ import usersRouter from './routes/users_Route';
 import categoriesRouter from './routes/categories_Route';
 import brandsRouter from './routes/brands_Route';
 import productsRouter from './routes/products_Route';
+import ordersRouter from './routes/orders_Route';
 
 class App {
     /**
@@ -81,6 +82,7 @@ class App {
         this.app.use('/api/v1/categories', categoriesRouter);
         this.app.use('/api/v1/brands', brandsRouter);
         this.app.use('/api/v1/products', productsRouter);
+        this.app.use('/api/v1/orders', ordersRouter);
 
         /**
          * Manejo de Rutas Inexistentes.

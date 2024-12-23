@@ -245,6 +245,60 @@ class DefaultController {
                             }
                         },
                     ],
+                    order_routes: [
+                        {
+                            url: 'api/v1/orders/addOrder',
+                            roles: 'Cliente | Vendedor | Administrador',
+                            methods: 'POST',
+                            header: 'auth-token',
+                            "Content-Type": 'multipart/form-data',
+                            body: {
+                                "usuarioCliente_idUsuario": "Number > 'required'",
+                                "detalles": [
+                                    {
+                                        "cantidad": "Number > 'required'",
+                                        "producto_idProducto": "Number > 'required'"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            url: '/api/v1/orders/addOrderDetail',
+                            roles: 'Cliente | Vendedor | Administrador',
+                            methods: 'POST',
+                            header: 'auth-token',
+                            "Content-Type": 'application/json',
+                            body: {
+                                "cantidad": "Number > 'required'",
+                                "producto_idProducto": "Number > 'required'",
+                                "orden_idOrden": "Number > 'required'"
+                            }
+                        },
+                        {
+                            url: 'api/v1/orders/modifyOrder',
+                            roles: 'Vendedor | Administrador',
+                            methods: 'PUT',
+                            header: 'auth-token',
+                            "Content-Type": 'application/json',
+                            body: {
+                                "idOrden": "Number > 'required'",
+                                "status_Orden": "Number > 'optional'",
+                                "isActive": "Number > 'optional'",
+                                "usuarioCliente_idUsuario": "Number > 'optional'",
+                                "usuarioVendedor_idUsuario": "Number > 'optional'",
+                            }
+                        },
+                        {
+                            url: 'api/v1/orders/deleteOrderDetail',
+                            roles: 'Cliente | Vendedor | Administrador',
+                            methods: 'DELETE',
+                            header: 'auth-token',
+                            "Content-Type": 'application/json',
+                            body: {
+                                "idDetalleOrden": "Number > 'required'"
+                            }
+                        }
+                    ],
                 }
             ]
         });
