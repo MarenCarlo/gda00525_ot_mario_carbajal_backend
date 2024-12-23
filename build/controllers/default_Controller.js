@@ -208,7 +208,7 @@ class DefaultController {
                                 }]
                         },
                         {
-                            url: 'api/v1/products/modifyStockEntry',
+                            url: 'api/v1/products/addStockEntry',
                             roles: 'Administrador',
                             methods: 'POST',
                             header: 'auth-token',
