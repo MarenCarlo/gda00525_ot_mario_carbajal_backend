@@ -29,10 +29,10 @@ GO
 -- TABLA: Empresas
 CREATE TABLE tb_Empresas (
 	idEmpresa INT IDENTITY(1,1) PRIMARY KEY,
-	razon_social NVARCHAR(255) NOT NULL,
+	razon_social NVARCHAR(255) UNIQUE NOT NULL,
 	nombre_comercial NVARCHAR(255) UNIQUE NOT NULL,
 	nit NVARCHAR(12) UNIQUE NOT NULL,
-	telefono NVARCHAR(8) UNIQUE NOT NULL,
+	telefono NVARCHAR(8) NOT NULL,
     email NVARCHAR(128) UNIQUE NOT NULL
 );
 GO
@@ -61,16 +61,16 @@ GO
 CREATE TABLE tb_Categorias_Productos (
 	idCategoriaProducto INT IDENTITY(1,1) PRIMARY KEY,
 	nombre NVARCHAR(32) UNIQUE NOT NULL,
-	descripcion NVARCHAR(128) NULL,
+	descripcion NVARCHAR(255) NULL,
 	fecha_creacion DATETIME DEFAULT GETDATE()
 );
 GO
 
 -- TABLA: Marcas Productos
 CREATE TABLE tb_Marcas_Productos (
-	idMarcaProductos INT IDENTITY(1,1) PRIMARY KEY,
+	idMarcaProducto INT IDENTITY(1,1) PRIMARY KEY,
 	nombre NVARCHAR(32) UNIQUE NOT NULL,
-	descripcion NVARCHAR(128) NULL,
+	descripcion NVARCHAR(255) NULL,
 	fecha_creacion DATETIME DEFAULT GETDATE()
 );
 GO
@@ -81,16 +81,28 @@ CREATE TABLE tb_Productos (
 	codigo NVARCHAR(8) UNIQUE NOT NULL,
 	nombre NVARCHAR(128) UNIQUE NOT NULL,
 	descripcion NVARCHAR(128) NOT NULL,
-	precio_compra DECIMAL(7,2) NOT NULL,
-	precio_venta DECIMAL(7,2) NOT NULL,
+	precio_compra DECIMAL(7,2) DEFAULT 0.00,
+	precio_venta DECIMAL(7,2) DEFAULT 0.00,
 	fecha_creacion DATETIME DEFAULT GETDATE(),
-	stock INT NOT NULL,
-	imagen VARBINARY(MAX) NOT NULL,
+	stock INT DEFAULT 0,
+	imagen NVARCHAR(255) NOT NULL,
 	isActive BIT DEFAULT 1,
 	categoria_idCategoria INT NOT NULL,
 	marca_idMarca INT NOT NULL,
 	CONSTRAINT FK_Categoria FOREIGN KEY (categoria_idCategoria) REFERENCES tb_Categorias_Productos(idCategoriaProducto),
-    CONSTRAINT FK_Marca FOREIGN KEY (marca_idMarca) REFERENCES tb_Marcas_Productos(idMarcaProductos)
+    CONSTRAINT FK_Marca FOREIGN KEY (marca_idMarca) REFERENCES tb_Marcas_Productos(idMarcaProducto)
+)
+GO
+
+-- TABLA: Ingresos Stock Productos
+CREATE TABLE tb_Ingresos_Productos_Stock (
+	idIngresoStock INT IDENTITY(1,1) PRIMARY KEY,
+	cantidad INT NOT NULL,
+	precio_compra DECIMAL(7,2) NOT NULL,
+	precio_venta DECIMAL(7,2) NOT NULL,
+	fecha_creacion DATETIME DEFAULT GETDATE(),
+	producto_idProducto INT NOT NULL,
+	CONSTRAINT FK_ProductoIngSto FOREIGN KEY (producto_idProducto) REFERENCES tb_Productos(idProducto),
 )
 GO
 
@@ -99,7 +111,7 @@ CREATE TABLE tb_Ordenes (
 	idOrden INT IDENTITY(1,1) PRIMARY KEY,
 	total_orden DECIMAL(9,2) NOT NULL,
 	fecha_creacion DATETIME DEFAULT GETDATE(),
-	status_Orden TINYINT NOT NULL CHECK (status_Orden BETWEEN 0 AND 5), 
+	status_Orden TINYINT NOT NULL CHECK (status_Orden BETWEEN 0 AND 3), 
 	isActive BIT DEFAULT 1,
 	usuarioCliente_idUsuario INT NOT NULL,
 	usuarioVendedor_idUsuario INT NULL,
@@ -115,7 +127,7 @@ CREATE TABLE tb_Detalles_Orden (
 	subtotal DECIMAL(9,2) NOT NULL,
 	producto_idProducto INT NOT NULL,
 	orden_idOrden INT NOT NULL,
-	CONSTRAINT FK_Producto FOREIGN KEY (producto_idProducto) REFERENCES tb_Productos(idProducto),
+	CONSTRAINT FK_ProductoDetOrd FOREIGN KEY (producto_idProducto) REFERENCES tb_Productos(idProducto),
 	CONSTRAINT FK_Orden FOREIGN KEY (orden_idOrden) REFERENCES tb_Ordenes(idOrden)
 )
 GO
@@ -295,7 +307,7 @@ GO
 
 -- Procedimiento: Editar Marca Producto
 CREATE PROCEDURE sp_Editar_Marca_Producto
-    @idMarcaProductos INT,
+    @idMarcaProducto INT,
     @nombre NVARCHAR(32) = NULL,
     @descripcion NVARCHAR(128) = NULL
 AS
@@ -305,7 +317,7 @@ BEGIN
     SET
         nombre = ISNULL(@nombre, nombre),
         descripcion = ISNULL(@descripcion, descripcion)
-    WHERE idMarcaProductos = @idMarcaProductos;
+    WHERE idMarcaProducto = @idMarcaProducto;
 END;
 GO
 
@@ -315,10 +327,7 @@ CREATE PROCEDURE sp_Crear_Producto
     @codigo NVARCHAR(8),
     @nombre NVARCHAR(128),
     @descripcion NVARCHAR(128),
-    @precio_compra DECIMAL(7,2),
-    @precio_venta DECIMAL(7,2),
-    @stock INT,
-    @imagen VARBINARY(MAX),
+    @imagen NVARCHAR(255),
     @isActive BIT = 1,
     @categoria_idCategoria INT,
     @marca_idMarca INT
@@ -326,7 +335,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
     INSERT INTO tb_Productos (codigo, nombre, descripcion, precio_compra, precio_venta, stock, imagen, isActive, categoria_idCategoria, marca_idMarca)
-    VALUES (@codigo, @nombre, @descripcion, @precio_compra, @precio_venta, @stock, @imagen, @isActive, @categoria_idCategoria, @marca_idMarca);
+    VALUES (@codigo, @nombre, @descripcion, 0.00, 0.00, 0, @imagen, @isActive, @categoria_idCategoria, @marca_idMarca);
     SELECT SCOPE_IDENTITY() AS NuevoID;
 END;
 GO
@@ -337,13 +346,8 @@ CREATE PROCEDURE sp_Editar_Producto
     @codigo NVARCHAR(8) = NULL,
     @nombre NVARCHAR(128) = NULL,
     @descripcion NVARCHAR(128) = NULL,
-    @precio_compra DECIMAL(7,2) = NULL,
-    @precio_venta DECIMAL(7,2) = NULL,
-    @stock INT = NULL, -- Puede ser positivo o negativo para venta/restock
-    @imagen VARBINARY(MAX) = NULL,
+    @imagen NVARCHAR(255) = NULL,
     @isActive BIT = NULL,
-    @isOffer BIT = NULL,
-    @descuento_Offer FLOAT = NULL, -- FLOAT percentil multiplicador para descuentos
     @categoria_idCategoria INT = NULL,
     @marca_idMarca INT = NULL
 AS
@@ -354,9 +358,6 @@ BEGIN
         codigo = ISNULL(@codigo, codigo),
         nombre = ISNULL(@nombre, nombre),
         descripcion = ISNULL(@descripcion, descripcion),
-        precio_compra = ISNULL(@precio_compra, precio_compra),
-        precio_venta = ISNULL(@precio_venta, precio_venta),
-        stock = ISNULL(@stock, stock),
         imagen = ISNULL(@imagen, imagen),
         isActive = ISNULL(@isActive, isActive),
         categoria_idCategoria = ISNULL(@categoria_idCategoria, categoria_idCategoria),
@@ -365,28 +366,31 @@ BEGIN
 END;
 GO
 
--- Procedimiento: Venta/Restock Productos
-CREATE PROCEDURE sp_Venta_Restock_Productos
-    @idProducto INT,
+-- Procedimiento: Ingresos Productos
+CREATE PROCEDURE sp_Agregar_Ingreso_Stock_Producto
     @cantidad INT,
-    @nuevoPrecioCompra DECIMAL(7,2) = NULL,
-    @nuevoPrecioVenta DECIMAL(7,2) = NULL
+    @precio_compra DECIMAL(7,2),
+    @precio_venta DECIMAL(7,2),
+    @producto_idProducto INT
 AS
 BEGIN
     SET NOCOUNT ON;
-    UPDATE tb_Productos
-    SET 
-        stock = stock + @cantidad, 
-        precio_compra = ISNULL(@nuevoPrecioCompra, precio_compra), 
-        precio_venta = ISNULL(@nuevoPrecioVenta, precio_venta)
-    WHERE idProducto = @idProducto;
+    INSERT INTO tb_Ingresos_Productos_Stock (
+        cantidad, precio_compra, precio_venta, fecha_creacion, producto_idProducto
+    )
+    VALUES (
+		@cantidad, @precio_compra, @precio_venta, GETDATE(), @producto_idProducto
+	);
+    SELECT stock AS nuevo_stock
+    FROM tb_Productos
+    WHERE idProducto = @producto_idProducto;
 END;
 GO
 
 /** 
 	PROCEDIMIENTOS TABLA ORDEN 
 **/
--- Procedimiento: Crear Orden con sus detalles
+-- Procedimiento: Crear Orden con sus detalless
 CREATE PROCEDURE sp_Crear_Orden_Y_Detalles
     @total_orden DECIMAL(9,2),
     @status_Orden TINYINT,
@@ -398,16 +402,12 @@ AS
 BEGIN
     BEGIN TRY
         BEGIN TRANSACTION;
-
         -- Establece la fecha de creación si no se proporciona
         SET @fecha_creacion = ISNULL(@fecha_creacion, GETDATE());
-
         -- Inserta la orden y obtiene el ID generado
         INSERT INTO tb_Ordenes (total_orden, status_Orden, usuarioCliente_idUsuario, usuarioVendedor_idUsuario, fecha_creacion)
         VALUES (@total_orden, @status_Orden, @usuarioCliente_idUsuario, @usuarioVendedor_idUsuario, @fecha_creacion);
-
         DECLARE @nuevoIdOrden INT = SCOPE_IDENTITY();
-
         -- Procesa el JSON para insertar los detalles de la orden
         INSERT INTO tb_Detalles_Orden (cantidad, subtotal, producto_idProducto, orden_idOrden)
         SELECT
@@ -420,41 +420,19 @@ BEGIN
             subtotal DECIMAL(9,2) '$.subtotal',
             producto_idProducto INT '$.producto_idProducto'
         ) AS detalles;
-
         COMMIT TRANSACTION;
-
-        -- Devuelve el ID de la nueva orden
         SELECT @nuevoIdOrden AS NuevoID;
     END TRY
     BEGIN CATCH
-        -- Si ocurre un error, revierte la transacción
         ROLLBACK TRANSACTION;
         THROW;
     END CATCH
 END;
 GO
 
--- Procedimiento: Crear Orden
-CREATE PROCEDURE sp_Crear_Orden
-    @total_orden DECIMAL(9,2),
-    @status_Orden TINYINT,
-    @usuarioCliente_idUsuario INT,
-    @usuarioVendedor_idUsuario INT = NULL,
-    @fecha_creacion DATETIME = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SET @fecha_creacion = ISNULL(@fecha_creacion, GETDATE());
-    INSERT INTO tb_Ordenes (total_orden, status_Orden, usuarioCliente_idUsuario, usuarioVendedor_idUsuario, fecha_creacion)
-    VALUES (@total_orden, @status_Orden, @usuarioCliente_idUsuario, @usuarioVendedor_idUsuario, @fecha_creacion);
-    SELECT SCOPE_IDENTITY() AS NuevoID;
-END;
-GO
-
 -- Procedimiento: Editar Orden
 CREATE PROCEDURE sp_Editar_Orden
     @idOrden INT,
-    @total_orden DECIMAL(9,2) = NULL,
     @status_Orden TINYINT = NULL,
     @isActive BIT = NULL,
     @usuarioCliente_idUsuario INT = NULL,
@@ -464,7 +442,6 @@ BEGIN
 	SET NOCOUNT ON;
     UPDATE tb_Ordenes
     SET
-        total_orden = ISNULL(@total_orden, total_orden),
         status_Orden = ISNULL(@status_Orden, status_Orden),
         isActive = ISNULL(@isActive, isActive),
         usuarioCliente_idUsuario = ISNULL(@usuarioCliente_idUsuario, usuarioCliente_idUsuario),
@@ -473,59 +450,146 @@ BEGIN
 END;
 GO
 
-/** 
-	PROCEDIMIENTOS TABLA DETALLES ORDEN 
-**/
--- Procedimiento: Crear Detalle Orden en enormes cantidades
-CREATE PROCEDURE sp_Crear_Detalle_Orden_nCantidad (@detalles NVARCHAR(MAX))
+-- Procedimiento: Editar Orden
+CREATE PROCEDURE sp_Editar_Total_Orden
+    @idOrden INT,
+    @total_orden DECIMAL(9,2)
 AS
 BEGIN
-    SET NOCOUNT ON;
-    DECLARE @sql NVARCHAR(MAX);
-    IF RIGHT(@detalles, 1) = ','
-    BEGIN
-        SET @detalles = LEFT(@detalles, LEN(@detalles) - 1);
-    END
-    SET @sql = '
-        INSERT INTO 
-            tb_Detalles_Orden (cantidad, subtotal, producto_idProducto, orden_idOrden) 
-        VALUES ' + @detalles;
-    EXEC sp_executesql @sql;
-END
+	SET NOCOUNT ON;
+    UPDATE tb_Ordenes
+    SET
+        total_orden = @total_orden
+    WHERE idOrden = @idOrden;
+END;
 GO
 
--- Procedimiento: Crear Detalle Orden 1 por 1
-CREATE PROCEDURE sp_Crear_Detalle_Orden_1por1
-    @cantidad DECIMAL(9,2),
-    @subtotal INT,
+-- Procedimiento: Crear Detalle Orden
+CREATE PROCEDURE sp_Crear_Detalle_Orden
+    @cantidad INT,
+    @subtotal DECIMAL(9,2),
     @producto_idProducto INT,
     @orden_idOrden INT
 AS
 BEGIN
-	SET NOCOUNT ON;
+    SET NOCOUNT ON;
     INSERT INTO tb_Detalles_Orden (cantidad, subtotal, producto_idProducto, orden_idOrden)
     VALUES (@cantidad, @subtotal, @producto_idProducto, @orden_idOrden);
 	SELECT SCOPE_IDENTITY() AS NuevoID;
+END
+GO
+
+-- Procedimiento: Eliminar Detalle Orden
+CREATE PROCEDURE sp_Eliminar_Detalle_Orden
+    @idDetalleOrden INT
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM tb_Detalles_Orden d
+        INNER JOIN tb_Ordenes o ON d.orden_idOrden = o.idOrden
+        WHERE d.idDetalleOrden = @idDetalleOrden AND o.status_Orden = 1
+    )
+    BEGIN
+        DELETE FROM tb_Detalles_Orden
+        WHERE idDetalleOrden = @idDetalleOrden;
+        PRINT 'Detalle de orden eliminado correctamente.';
+    END
+    ELSE
+    BEGIN
+        PRINT 'No se puede eliminar, porque la orden ya se bloqueo en aceptada/cancelada.';
+    END
 END;
 GO
 
--- Procedimiento: Cambiar Status de Orden
-CREATE PROCEDURE sp_Editar_Detalle_Orden
-    @idDetalleOrden INT,
-    @cantidad DECIMAL(9,2) = NULL,
-    @subtotal INT = NULL,
-    @producto_idProducto INT = NULL,
-    @orden_idOrden INT = NULL
+/**
+	TRIGGERS
+	Creacion de Triggers Necesarios para operaciones de Datos.
+**/
+
+-- Trigger que nos actualiza el Stock con el ingreso reciente y los precios nuevos de compra y venta.
+CREATE TRIGGER trg_Actualizar_Stock_Precio
+ON tb_Ingresos_Productos_Stock
+AFTER INSERT
 AS
 BEGIN
-	SET NOCOUNT ON;
-    UPDATE tb_Detalles_Orden
-    SET
-        cantidad = ISNULL(@cantidad, cantidad),
-        subtotal = ISNULL(@subtotal, subtotal),
-        producto_idProducto = ISNULL(@producto_idProducto, producto_idProducto),
-        orden_idOrden = ISNULL(@orden_idOrden, orden_idOrden)
-    WHERE idDetalleOrden = @idDetalleOrden;
+    UPDATE pro
+    SET 
+        pro.stock = pro.stock + i.cantidad,
+        pro.precio_compra = i.precio_compra,
+        pro.precio_venta = i.precio_venta,
+		pro.isActive = CASE 
+            WHEN (pro.stock + i.cantidad) > 0 THEN 1
+            ELSE 0 
+        END
+    FROM tb_Productos pro
+    INNER JOIN inserted i ON pro.idProducto = i.producto_idProducto;
+END;
+GO
+
+-- Trigger que nos actualiza el Stock con los detalles de Orden insertadas despues de la venta.
+CREATE TRIGGER tr_Actualizar_Stock_Despues_Orden
+ON tb_Detalles_Orden
+AFTER INSERT
+AS
+BEGIN
+    UPDATE p
+    SET 
+		p.stock = p.stock - i.cantidad,
+		p.isActive = CASE 
+			WHEN p.stock - i.cantidad <= 0 THEN 0
+			ELSE p.isActive                      
+	END
+    FROM tb_Productos p
+    INNER JOIN INSERTED i ON p.idProducto = i.producto_idProducto
+END;
+GO
+
+-- Trigger que nos devuelve el Stock al producto, si la orden es cancelada
+CREATE TRIGGER trg_Actualizar_Stock_Cancelar_Orden
+ON tb_Ordenes
+AFTER UPDATE
+AS
+BEGIN
+    IF EXISTS (SELECT 1 FROM inserted WHERE status_Orden = 0 AND isActive = 0)
+    BEGIN
+        UPDATE p
+        SET 
+			p.stock = p.stock + d.cantidad,
+			p.isActive = CASE 
+				WHEN ((p.stock + d.cantidad) > 0) THEN 1
+				ELSE 0 
+			END
+        FROM tb_Productos p
+        INNER JOIN tb_Detalles_Orden d ON p.idProducto = d.producto_idProducto
+        INNER JOIN inserted i ON i.idOrden = d.orden_idOrden
+        WHERE i.status_Orden = 0 AND i.isActive = 0;
+    END
+END;
+GO
+
+-- Trigger que nos devuelve el Stock al producto, si un detalle de Ordenes es eliminado
+CREATE TRIGGER trg_Restaurar_Stock_Eliminar_Detalle_Orden
+ON tb_Detalles_Orden
+AFTER DELETE
+AS
+BEGIN
+    -- Restaurar el stock del producto relacionado
+    UPDATE p
+    SET 
+		p.stock = p.stock + d.cantidad,
+		p.isActive = CASE 
+			WHEN ((p.stock + d.cantidad) > 0) THEN 1
+			ELSE 0 
+		END
+    FROM tb_Productos p
+    INNER JOIN deleted d ON p.idProducto = d.producto_idProducto;
+
+    -- Actualizar el total de la orden restando el subtotal del detalle eliminado
+    UPDATE o
+    SET o.total_orden = o.total_orden - d.subtotal
+    FROM tb_Ordenes o
+    INNER JOIN deleted d ON o.idOrden = d.orden_idOrden;
 END;
 GO
 
@@ -553,7 +617,7 @@ FROM
 INNER JOIN 
     tb_Categorias_Productos cat ON pro.categoria_idCategoria = cat.idCategoriaProducto
 INNER JOIN 
-    tb_Marcas_Productos mar ON pro.marca_idMarca = mar.idMarcaProductos
+    tb_Marcas_Productos mar ON pro.marca_idMarca = mar.idMarcaProducto
 WHERE 
     pro.isActive = 1 AND pro.stock > 0;
 GO
@@ -717,92 +781,3 @@ EXEC sp_Crear_Categoria_Producto 'Línea Blanca', 'Categoría para productos ele
 GO
 EXEC sp_Crear_Categoria_Producto 'Licencias', 'Categoría para productos de Activación de Software.';
 GO
-
--- Datos: PRODUCTOS
-EXEC sp_Crear_Producto '1001', 'Smartphone Samsung Galaxy', 'Smartphone de gama alta.', 2000.00, 4500.00, 95, 0x123456, 1, 1, 1;
-GO
-EXEC sp_Crear_Producto '1002', 'Consola de Videojuegos Playstation 5', 'Consola de Videojuegos de ultima generación.', 3000.00, 5000.00, 90, 0x123456, 1, 3, 2;
-GO
-EXEC sp_Crear_Producto '1003', 'Smartphone Iphone 13', 'Smartphone de gama alta.', 7500.00, 10000.00, 98, 0x123456, 1, 1, 4;
-GO
-EXEC sp_Crear_Producto '1004', 'Lavadora y Secadora LG', 'Máquina automática lavadora y secadora de ropa.', 1500.00, 3000.00, 95, 0x123456, 1, 4, 3;
-GO
-EXEC sp_Crear_Producto '1005', 'Impresora y Scanner de documentos', 'Equipo de oficina de escaneo e impresión de documentos.', 250.00, 400.00, 70, 0x123456, 1, 2, 3;
-GO
-EXEC sp_Crear_Producto '1006', 'Licencia de Activación Office 365', 'Clave de activación ORM de software.', 250.00, 400.00, 80, 0x123456, 1, 5, 5;
-GO
-
--- Datos: ORDENES Y DETALLES RESPECTIVOS
-
-
--- Data: Orden 1
-DECLARE @detalles NVARCHAR(MAX) = '[
-    {"cantidad": 5, "subtotal": 15000.00, "producto_idProducto": 4},
-    {"cantidad": 5, "subtotal": 22500.00, "producto_idProducto": 1}
-]';
-EXEC sp_Crear_Orden_Y_Detalles 
-    @total_orden = 37500.00,
-    @status_Orden = 2,
-    @usuarioCliente_idUsuario = 3,
-    @usuarioVendedor_idUsuario = 2,
-	@fecha_Creacion = '2024-08-01 08:00:00',
-    @detalles = @detalles;
-GO
-
--- Data: Orden 2
-DECLARE @detalles NVARCHAR(MAX) = '[
-    {"cantidad": 10, "subtotal": 50000.00, "producto_idProducto": 2},
-    {"cantidad": 25, "subtotal": 10000.00, "producto_idProducto": 5}
-]';
-EXEC sp_Crear_Orden_Y_Detalles 
-    @total_orden = 60000.00,
-    @status_Orden = 2,
-    @usuarioCliente_idUsuario = 4,
-    @usuarioVendedor_idUsuario = 2,
-	@fecha_Creacion = '2024-08-15 14:30:00',
-    @detalles = @detalles;
-GO
-
--- Data: Orden 3
-DECLARE @detalles NVARCHAR(MAX) = '[
-    {"cantidad": 2, "subtotal": 20000.00, "producto_idProducto": 3},
-    {"cantidad": 5, "subtotal": 2000.00, "producto_idProducto": 5},
-    {"cantidad": 20, "subtotal": 8000.00, "producto_idProducto": 6}
-]';
-EXEC sp_Crear_Orden_Y_Detalles 
-    @total_orden = 20000.00,
-    @status_Orden = 2,
-    @usuarioCliente_idUsuario = 5,
-    @usuarioVendedor_idUsuario = 2,
-	@fecha_Creacion = '2024-08-20 09:45:00',
-    @detalles = @detalles;
-GO
-
--- Data: Orden 4
-DECLARE @detalles NVARCHAR(MAX) = '[
-    {"cantidad": 5, "subtotal": 22500.00, "producto_idProducto": 1}
-]';
-EXEC sp_Crear_Orden_Y_Detalles 
-    @total_orden = 22500.00,
-    @status_Orden = 2,
-    @usuarioCliente_idUsuario = 6,
-    @usuarioVendedor_idUsuario = 2,
-	@fecha_Creacion = '2024-08-31 18:00:00',
-    @detalles = @detalles;
-GO
-
-/**
-	SELECT DE VIEWS DE DATOS DE PRUEBA
-**/
-
---A
-SELECT * FROM vw_Productos_Activos;
-
---B
-SELECT * FROM vw_TotalQuetzales_Ordenes_Agosto2024;
-
---C
-SELECT * FROM vw_Top10_Clientes_MayorConsumo;
-
---D
-SELECT * FROM vw_Top10_Productos_MasVendidos;
