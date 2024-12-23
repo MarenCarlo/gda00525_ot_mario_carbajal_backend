@@ -1,0 +1,26 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+/**
+ * Middlewares
+ */
+const validate_token_1 = __importDefault(require("../middlewares/validate_token"));
+const orders_Controller_1 = require("../controllers/orders_Controller");
+const validate_adminOrSeller_1 = __importDefault(require("../middlewares/validate_adminOrSeller"));
+class OrdersRouter {
+    constructor() {
+        this.router = (0, express_1.Router)();
+        this.config();
+    }
+    config() {
+        this.router.post('/addOrder', validate_token_1.default, orders_Controller_1.ordersController.addOrder);
+        this.router.put('/modifyOrder', validate_token_1.default, validate_adminOrSeller_1.default, orders_Controller_1.ordersController.modifyOrder);
+        this.router.delete('/deleteOrderDetail', validate_token_1.default, orders_Controller_1.ordersController.deleteOrderDetail);
+        this.router.post('/addOrderDetail', validate_token_1.default, orders_Controller_1.ordersController.addOrderDetail);
+    }
+}
+const ordersRouter = new OrdersRouter();
+exports.default = ordersRouter.router;
