@@ -32,6 +32,13 @@ class DefaultController {
                 {
                     users_routes: [
                         {
+                            url: 'api/v1/users/getUsers/:idUsuario?',
+                            roles: ' Vendedor | Administrador',
+                            methods: 'GET',
+                            header: 'auth-token',
+                            body: {}
+                        },
+                        {
                             url: 'api/v1/users/SignUp',
                             roles: 'Administrador | Vendedor',
                             methods: 'POST',
@@ -73,6 +80,13 @@ class DefaultController {
                     ],
                     enterprises_routes: [
                         {
+                            url: 'api/v1/enterprises/getEnterprises/:idEmpresa?',
+                            roles: ' Vendedor | Administrador',
+                            methods: 'GET',
+                            header: 'auth-token',
+                            body: {}
+                        },
+                        {
                             url: 'api/v1/enterprises/addEnterprise',
                             roles: 'Administrador | Vendedor',
                             methods: 'POST',
@@ -104,6 +118,13 @@ class DefaultController {
                     ],
                     roles_routes: [
                         {
+                            url: 'api/v1/roles/getRoles',
+                            roles: 'Vendedor | Administrador',
+                            methods: 'GET',
+                            header: 'auth-token',
+                            body: {}
+                        },
+                        {
                             url: 'api/v1/roles/modifyRole',
                             roles: 'Administrador (con Tag de SuperUser === 1 en BD)',
                             methods: 'PUT',
@@ -117,6 +138,13 @@ class DefaultController {
                         }
                     ],
                     category_routes: [
+                        {
+                            url: 'api/v1/categories/getCategories',
+                            roles: 'Cliente | Vendedor | Administrador',
+                            methods: 'GET',
+                            header: 'auth-token',
+                            body: {}
+                        },
                         {
                             url: 'api/v1/categories/addCategory',
                             roles: 'Administrador',
@@ -143,6 +171,13 @@ class DefaultController {
                     ],
                     brand_routes: [
                         {
+                            url: 'api/v1/brands/getBrands',
+                            roles: 'Cliente | Vendedor | Administrador',
+                            methods: 'GET',
+                            header: 'auth-token',
+                            body: {}
+                        },
+                        {
                             url: 'api/v1/brands/addBrand',
                             roles: 'Administrador',
                             methods: 'POST',
@@ -167,6 +202,20 @@ class DefaultController {
                         }
                     ],
                     product_routes: [
+                        {
+                            url: 'api/v1/products/getProductsPublic/:idProducto?',
+                            roles: ' Cliente | Vendedor | Administrador',
+                            methods: 'GET',
+                            header: 'auth-token',
+                            body: {}
+                        },
+                        {
+                            url: 'api/v1/products/getProductsInternal/:idProducto?',
+                            roles: ' Vendedor | Administrador',
+                            methods: 'GET',
+                            header: 'auth-token',
+                            body: {}
+                        },
                         {
                             url: 'api/v1/products/addProduct',
                             roles: 'Administrador',
@@ -207,6 +256,13 @@ class DefaultController {
                             }]
                         },
                         {
+                            url: 'api/v1/products/getIngresosStock',
+                            roles: 'Administrador',
+                            methods: 'GET',
+                            header: 'auth-token',
+                            body: {}
+                        },
+                        {
                             url: 'api/v1/products/addStockEntry',
                             roles: 'Administrador',
                             methods: 'POST',
@@ -245,6 +301,13 @@ class DefaultController {
                         },
                     ],
                     order_routes: [
+                        {
+                            url: 'api/v1/getOrders/:idOrden?',
+                            roles: 'Cliente | Vendedor | Administrador',
+                            methods: 'GET',
+                            header: 'auth-token',
+                            body: {}
+                        },
                         {
                             url: 'api/v1/orders/addOrder',
                             roles: 'Cliente | Vendedor | Administrador',

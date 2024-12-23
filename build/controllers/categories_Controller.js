@@ -18,12 +18,37 @@ const connection_1 = __importDefault(require("../database/connection"));
 const tb_categorias_productos_1 = __importDefault(require("../models/tb_categorias_productos"));
 class CategoriesController {
     /**
-        * Este Endpoint sirve para registrar nuevas empresas en la APP
-        */
+     * Este Endpoint sirve para obtener la data de las Categorias
+     */
     getCategories(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const ip = req.socket.remoteAddress;
             console.info(ip);
+            try {
+                const categories = yield tb_categorias_productos_1.default.findAll({
+                    attributes: ['idCategoriaProducto', 'nombre', 'descripcion', 'fecha_creacion'],
+                });
+                if (categories.length === 0) {
+                    return res.status(404).json({
+                        error: true,
+                        message: 'No se encontraron categorias de productos.',
+                        data: []
+                    });
+                }
+                return res.status(200).json({
+                    error: false,
+                    message: 'Categorias obtenidas exitosamente.',
+                    data: categories
+                });
+            }
+            catch (error) {
+                console.error(error);
+                return res.status(500).json({
+                    error: true,
+                    message: 'Hubo un problema al obtener las Categorias.',
+                    data: { error }
+                });
+            }
         });
     }
     /**

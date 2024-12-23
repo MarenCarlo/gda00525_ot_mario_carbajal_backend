@@ -13,6 +13,7 @@ class CategoriesRouter {
         this.config();
     }
     config(): void {
+        this.router.get('/getCategories', validateToken, categoriesController.getCategories);
         this.router.post('/addCategory', validateToken, validateAdmin, categoriesController.addCategory);
         this.router.put('/modifyCategory', validateToken, validateAdmin, categoriesController.modifyCategory);
     }

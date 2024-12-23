@@ -17,6 +17,37 @@ const connection_1 = __importDefault(require("../database/connection"));
 const tb_roles_1 = __importDefault(require("../models/tb_roles"));
 const roleController_joi_1 = require("../shared/joiDataValidations/roleController_joi");
 class RolesController {
+    getRoles(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const ip = req.socket.remoteAddress;
+            console.info(ip);
+            try {
+                const roles = yield tb_roles_1.default.findAll({
+                    attributes: ['idRol', 'rol', 'descripcion'],
+                });
+                if (roles.length === 0) {
+                    return res.status(404).json({
+                        error: true,
+                        message: 'No se encontraron roles.',
+                        data: []
+                    });
+                }
+                return res.status(200).json({
+                    error: false,
+                    message: 'Roles obtenidos exitosamente.',
+                    data: roles
+                });
+            }
+            catch (error) {
+                console.error(error);
+                return res.status(500).json({
+                    error: true,
+                    message: 'Hubo un problema al obtener los Roles.',
+                    data: { error }
+                });
+            }
+        });
+    }
     /**
      * Este Endpoint sirve para editar la data de los roles de la APP
      */

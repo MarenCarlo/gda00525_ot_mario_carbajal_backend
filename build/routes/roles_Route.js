@@ -17,6 +17,7 @@ class RolesRouter {
         this.config();
     }
     config() {
+        this.router.get('/getRoles', validate_token_1.default, validate_admin_1.default, roles_Controller_1.rolesController.getRoles);
         this.router.put('/modifyRole', validate_token_1.default, validate_admin_1.default, validate_superUser_1.default, roles_Controller_1.rolesController.modifyRole);
     }
 }

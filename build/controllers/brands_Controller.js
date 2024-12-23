@@ -18,6 +18,40 @@ const brandController_joi_1 = require("../shared/joiDataValidations/brandControl
 const tb_marcas_productos_1 = __importDefault(require("../models/tb_marcas_productos"));
 class BrandsController {
     /**
+    * Este Endpoint sirve para obtener la data de las Marcas
+    */
+    getBrands(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const ip = req.socket.remoteAddress;
+            console.info(ip);
+            try {
+                const marcas = yield tb_marcas_productos_1.default.findAll({
+                    attributes: ['idMarcaProducto', 'nombre', 'descripcion', 'fecha_creacion'],
+                });
+                if (marcas.length === 0) {
+                    return res.status(404).json({
+                        error: true,
+                        message: 'No se encontraron marcas de productos.',
+                        data: []
+                    });
+                }
+                return res.status(200).json({
+                    error: false,
+                    message: 'Marcas obtenidas exitosamente.',
+                    data: marcas
+                });
+            }
+            catch (error) {
+                console.error(error);
+                return res.status(500).json({
+                    error: true,
+                    message: 'Hubo un problema al obtener las marcas.',
+                    data: { error }
+                });
+            }
+        });
+    }
+    /**
     * Este Endpoint sirve para registrar nuevas empresas en la APP
     */
     addBrand(req, res) {

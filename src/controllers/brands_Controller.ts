@@ -8,6 +8,38 @@ import MarcaProducto from '../models/tb_marcas_productos';
 class BrandsController {
 
     /**
+    * Este Endpoint sirve para obtener la data de las Marcas
+    */
+    public async getBrands(req: Request, res: Response) {
+        const ip = req.socket.remoteAddress;
+        console.info(ip);
+        try {
+            const marcas = await MarcaProducto.findAll({
+                attributes: ['idMarcaProducto', 'nombre', 'descripcion', 'fecha_creacion'],
+            });
+            if (marcas.length === 0) {
+                return res.status(404).json({
+                    error: true,
+                    message: 'No se encontraron marcas de productos.',
+                    data: []
+                });
+            }
+            return res.status(200).json({
+                error: false,
+                message: 'Marcas obtenidas exitosamente.',
+                data: marcas
+            });
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({
+                error: true,
+                message: 'Hubo un problema al obtener las marcas.',
+                data: { error }
+            });
+        }
+    }
+
+    /**
     * Este Endpoint sirve para registrar nuevas empresas en la APP
     */
     public async addBrand(req: Request, res: Response) {

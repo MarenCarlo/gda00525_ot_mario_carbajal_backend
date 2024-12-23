@@ -5,6 +5,34 @@ import { roleOptionalSchema } from '../shared/joiDataValidations/roleController_
 
 class RolesController {
 
+    public async getRoles(req: Request, res: Response) {
+        const ip = req.socket.remoteAddress;
+        console.info(ip);
+        try {
+            const roles = await Rol.findAll({
+                attributes: ['idRol', 'rol', 'descripcion'],
+            });
+            if (roles.length === 0) {
+                return res.status(404).json({
+                    error: true,
+                    message: 'No se encontraron roles.',
+                    data: []
+                });
+            }
+            return res.status(200).json({
+                error: false,
+                message: 'Roles obtenidos exitosamente.',
+                data: roles
+            });
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({
+                error: true,
+                message: 'Hubo un problema al obtener los Roles.',
+                data: { error }
+            });
+        }
+    }
     /**
      * Este Endpoint sirve para editar la data de los roles de la APP
      */

@@ -22,6 +22,106 @@ const fs_1 = __importDefault(require("fs"));
 const tb_ingresos_productos_stock_1 = __importDefault(require("../models/tb_ingresos_productos_stock"));
 class ProductsController {
     /**
+    * Este Endpoint sirve para obtener productos o uno solo
+    * para los clientes
+    */
+    getProductsPublic(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const ip = req.socket.remoteAddress;
+            console.info(ip);
+            const { idProducto } = req.params;
+            try {
+                let query = 'SELECT * FROM vw_Productos_Publico';
+                let replacements = [];
+                if (idProducto) {
+                    if (typeof idProducto === 'number' && !isNaN(idProducto) && idProducto > 0) {
+                        return res.status(400).json({
+                            error: true,
+                            message: 'El ID de producto no es válido.',
+                            data: {}
+                        });
+                    }
+                    query += ` WHERE idProducto = ${Number(idProducto)}`;
+                }
+                const productos = yield connection_1.default.query(query, {
+                    replacements,
+                    type: 'SELECT'
+                });
+                if (!productos) {
+                    return res.status(404).json({
+                        error: true,
+                        message: 'No se encontraron productos.',
+                        data: {}
+                    });
+                }
+                return res.status(200).json({
+                    error: false,
+                    message: 'Productos obtenidos exitosamente.',
+                    data: productos
+                });
+            }
+            catch (error) {
+                return res.status(500).json({
+                    error: true,
+                    message: 'Hubo un error al obtener los productos.',
+                    data: {
+                        error
+                    }
+                });
+            }
+        });
+    }
+    /**
+    * Este Endpoint sirve para obtener productos o uno solo
+    * con informacion confidencial
+    */
+    getProductsInternal(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const ip = req.socket.remoteAddress;
+            console.info(ip);
+            const { idProducto } = req.params;
+            try {
+                let query = 'SELECT * FROM vw_Productos_Internos';
+                let replacements = [];
+                if (idProducto) {
+                    if (typeof idProducto === 'number' && !isNaN(idProducto) && idProducto > 0) {
+                        return res.status(400).json({
+                            error: true,
+                            message: 'El ID de producto no es válido.',
+                            data: {}
+                        });
+                    }
+                    query += ` WHERE idProducto = ${Number(idProducto)}`;
+                }
+                const productos = yield connection_1.default.query(query, {
+                    replacements,
+                    type: 'SELECT'
+                });
+                if (!productos) {
+                    return res.status(404).json({
+                        error: true,
+                        message: 'No se encontraron productos.',
+                        data: {}
+                    });
+                }
+                return res.status(200).json({
+                    error: false,
+                    message: 'Productos obtenidos exitosamente.',
+                    data: productos
+                });
+            }
+            catch (error) {
+                return res.status(500).json({
+                    error: true,
+                    message: 'Hubo un error al obtener los productos.',
+                    data: {
+                        error
+                    }
+                });
+            }
+        });
+    }
+    /**
      * Este Endpoint sirve para registrar nuevos productos en la APP
      */
     addProduct(req, res) {
@@ -269,6 +369,42 @@ class ProductsController {
                     });
                 }
             }));
+        });
+    }
+    /**
+   * Este Endpoint sirve para obtener los ingresos de stock existentes
+   */
+    getIngresosStock(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const ip = req.socket.remoteAddress;
+            console.info(ip);
+            try {
+                let query = 'SELECT * FROM vw_Ingresos_Stock ORDER BY fecha_creacion DESC;';
+                const productos = yield connection_1.default.query(query, {
+                    type: 'SELECT'
+                });
+                if (!productos) {
+                    return res.status(404).json({
+                        error: true,
+                        message: 'No se encontraron ingresos.',
+                        data: {}
+                    });
+                }
+                return res.status(200).json({
+                    error: false,
+                    message: 'Ingresos obtenidos exitosamente.',
+                    data: productos
+                });
+            }
+            catch (error) {
+                return res.status(500).json({
+                    error: true,
+                    message: 'Hubo un error al obtener los ingresos.',
+                    data: {
+                        error
+                    }
+                });
+            }
         });
     }
     /**

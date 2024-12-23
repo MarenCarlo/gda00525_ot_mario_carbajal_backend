@@ -14,6 +14,7 @@ class OrdersRouter {
         this.config();
     }
     config(): void {
+        this.router.get('/getOrders/:idOrden?', validateToken, ordersController.getOrders);
         this.router.post('/addOrder', validateToken, ordersController.addOrder);
         this.router.put('/modifyOrder', validateToken, validateAdminOrSeller, ordersController.modifyOrder);
         this.router.delete('/deleteOrderDetail', validateToken, ordersController.deleteOrderDetail);

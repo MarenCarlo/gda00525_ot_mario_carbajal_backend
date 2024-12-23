@@ -10,6 +10,102 @@ import IngresoProductoStock from '../models/tb_ingresos_productos_stock';
 class ProductsController {
 
     /**
+    * Este Endpoint sirve para obtener productos o uno solo
+    * para los clientes
+    */
+    public async getProductsPublic(req: Request, res: Response) {
+        const ip = req.socket.remoteAddress;
+        console.info(ip);
+        const { idProducto } = req.params;
+        try {
+            let query = 'SELECT * FROM vw_Productos_Publico';
+            let replacements: any = [];
+            if (idProducto) {
+                if (typeof idProducto === 'number' && !isNaN(idProducto) && idProducto > 0) {
+                    return res.status(400).json({
+                        error: true,
+                        message: 'El ID de producto no es válido.',
+                        data: {}
+                    });
+                }
+                query += ` WHERE idProducto = ${Number(idProducto)}`;
+            }
+            const productos = await sequelize.query(query, {
+                replacements,
+                type: 'SELECT'
+            });
+            if (!productos) {
+                return res.status(404).json({
+                    error: true,
+                    message: 'No se encontraron productos.',
+                    data: {}
+                });
+            }
+            return res.status(200).json({
+                error: false,
+                message: 'Productos obtenidos exitosamente.',
+                data: productos
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                error: true,
+                message: 'Hubo un error al obtener los productos.',
+                data: {
+                    error
+                }
+            });
+        }
+    }
+
+    /**
+    * Este Endpoint sirve para obtener productos o uno solo
+    * con informacion confidencial
+    */
+    public async getProductsInternal(req: Request, res: Response) {
+        const ip = req.socket.remoteAddress;
+        console.info(ip);
+        const { idProducto } = req.params;
+        try {
+            let query = 'SELECT * FROM vw_Productos_Internos';
+            let replacements: any = [];
+            if (idProducto) {
+                if (typeof idProducto === 'number' && !isNaN(idProducto) && idProducto > 0) {
+                    return res.status(400).json({
+                        error: true,
+                        message: 'El ID de producto no es válido.',
+                        data: {}
+                    });
+                }
+                query += ` WHERE idProducto = ${Number(idProducto)}`;
+            }
+            const productos = await sequelize.query(query, {
+                replacements,
+                type: 'SELECT'
+            });
+            if (!productos) {
+                return res.status(404).json({
+                    error: true,
+                    message: 'No se encontraron productos.',
+                    data: {}
+                });
+            }
+            return res.status(200).json({
+                error: false,
+                message: 'Productos obtenidos exitosamente.',
+                data: productos
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                error: true,
+                message: 'Hubo un error al obtener los productos.',
+                data: {
+                    error
+                }
+            });
+        }
+    }
+
+    /**
      * Este Endpoint sirve para registrar nuevos productos en la APP
      */
     public async addProduct(req: Request, res: Response) {
@@ -282,6 +378,40 @@ class ProductsController {
             }
 
         });
+    }
+
+    /**
+   * Este Endpoint sirve para obtener los ingresos de stock existentes
+   */
+    public async getIngresosStock(req: Request, res: Response) {
+        const ip = req.socket.remoteAddress;
+        console.info(ip);
+        try {
+            let query = 'SELECT * FROM vw_Ingresos_Stock ORDER BY fecha_creacion DESC;';
+            const productos = await sequelize.query(query, {
+                type: 'SELECT'
+            });
+            if (!productos) {
+                return res.status(404).json({
+                    error: true,
+                    message: 'No se encontraron ingresos.',
+                    data: {}
+                });
+            }
+            return res.status(200).json({
+                error: false,
+                message: 'Ingresos obtenidos exitosamente.',
+                data: productos
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                error: true,
+                message: 'Hubo un error al obtener los ingresos.',
+                data: {
+                    error
+                }
+            });
+        }
     }
 
     /**
