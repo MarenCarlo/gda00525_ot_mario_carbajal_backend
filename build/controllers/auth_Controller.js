@@ -52,7 +52,7 @@ class AuthController {
                             {
                                 model: tb_roles_1.default,
                                 as: 'rol',
-                                attributes: ['idRol', 'rol'],
+                                attributes: ['idRol', 'nombre'],
                             },
                             {
                                 model: tb_empresas_1.default,
@@ -102,9 +102,7 @@ class AuthController {
                 }
                 /**
                  * Construccion de JWT
-                 * user.rol.idRol
                  */
-                console.log(user);
                 const token = jsonwebtoken_1.default.sign({
                     idUsuario: user.idUsuario,
                     username: user.username,

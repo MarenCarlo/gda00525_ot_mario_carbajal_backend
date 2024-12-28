@@ -17,6 +17,10 @@ DetalleOrden.init({
         type: sequelize_1.DataTypes.INTEGER,
         allowNull: false,
     },
+    precio_venta: {
+        type: sequelize_1.DataTypes.DECIMAL(9, 2),
+        allowNull: false,
+    },
     subtotal: {
         type: sequelize_1.DataTypes.DECIMAL(9, 2),
         allowNull: false,

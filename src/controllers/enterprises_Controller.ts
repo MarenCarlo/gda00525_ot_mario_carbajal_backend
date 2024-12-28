@@ -2,6 +2,10 @@ import { Request, Response } from 'express';
 import { enterpriseOptionalSchema, enterpriseSchema } from '../shared/joiDataValidations/enterpriseController_joi';
 import sequelize from '../database/connection';
 import Empresa from '../models/tb_empresas';
+import { isValidNumber } from '../shared/inputTypesValidations';
+import { handleDatabaseError } from '../shared/handleDatabaseError';
+import { StoredProcedureResult } from '../models/types/promiseResultsInterfaces';
+import { addEnterpriseBody, modifyEnterpriseBody } from '../models/types/enterprisesInterfaces';
 
 class EnterprisesController {
 
@@ -12,33 +16,35 @@ class EnterprisesController {
         const ip = req.socket.remoteAddress;
         console.info(ip);
         const { idEmpresa } = req.params;
+        let idEmpresaParsed = Number(idEmpresa);
         try {
-            if (idEmpresa) {
-                if (typeof idEmpresa === 'number' && !isNaN(idEmpresa) && idEmpresa > 0) {
+            if (idEmpresaParsed) {
+                if (isValidNumber(idEmpresaParsed)) {
+                    const empresaDB: Awaited<ReturnType<typeof Empresa.findOne>> | null = await Empresa.findOne({
+                        where: { idEmpresa: idEmpresaParsed }
+                    });
+                    if (!empresaDB) {
+                        return res.status(404).json({
+                            error: true,
+                            message: 'La empresa no existe en DB.',
+                            data: {}
+                        });
+                    }
+                    return res.status(200).json({
+                        error: false,
+                        message: 'Empresa obtenida exitosamente.',
+                        data: empresaDB
+                    });
+                } else {
                     return res.status(400).json({
                         error: true,
                         message: 'El ID de empresa no es válido.',
-                        data: {}
+                        data: { idEmpresaParsed }
                     });
                 }
-                const empresa = await Empresa.findOne({
-                    where: { idEmpresa: Number(idEmpresa) }
-                });
-                if (!empresa) {
-                    return res.status(404).json({
-                        error: true,
-                        message: 'La empresa no existe en DB.',
-                        data: {}
-                    });
-                }
-                return res.status(200).json({
-                    error: false,
-                    message: 'Empresa obtenida exitosamente.',
-                    data: empresa
-                });
             } else {
-                const empresas = await Empresa.findAll();
-                if (!empresas || empresas.length === 0) {
+                const empresasDB: Awaited<ReturnType<typeof Empresa.findAll>> = await Empresa.findAll();
+                if (!empresasDB || empresasDB.length === 0) {
                     return res.status(404).json({
                         error: true,
                         message: 'No se encontraron empresas.',
@@ -48,17 +54,11 @@ class EnterprisesController {
                 return res.status(200).json({
                     error: false,
                     message: 'Empresas obtenidas exitosamente.',
-                    data: empresas
+                    data: empresasDB
                 });
             }
-        } catch (error: any) {
-            return res.status(500).json({
-                error: true,
-                message: 'Hubo un error al obtener las empresas.',
-                data: {
-                    error
-                }
-            });
+        } catch (error) {
+            return handleDatabaseError(error, res);
         }
     }
 
@@ -74,7 +74,7 @@ class EnterprisesController {
             nit,
             telefono,
             email
-        } = req.body;
+        }: addEnterpriseBody = req.body || {};
         const { error } = enterpriseSchema.validate(req.body);
         if (error) {
             return res.status(400).json({
@@ -87,7 +87,7 @@ class EnterprisesController {
             /**
              * Ejecucion del Procedimiento Almacenado
              */
-            const result: any = await sequelize.query(
+            const result = await sequelize.query(
                 'EXEC sp_Crear_Empresa :razon_social, :nombre_comercial, :nit, :telefono, :email',
                 {
                     replacements: {
@@ -98,7 +98,7 @@ class EnterprisesController {
                         email
                     }
                 }
-            );
+            ) as StoredProcedureResult;
             /**
              * Respuesta del servidor
              */
@@ -108,32 +108,8 @@ class EnterprisesController {
                 message: 'Empresa agregada exitosamente.',
                 data: { nuevoID },
             });
-        } catch (error: any) {
-            /**
-             * Condiciones de Datos Duplicados en restricciones de
-             * UNIQUE
-             */
-            if (error.name === 'SequelizeUniqueConstraintError') {
-                const uniqueError = error.errors[0];
-                const conflictingValue = uniqueError?.value
-                if (uniqueError?.message.includes('must be unique')) {
-                    return res.status(409).json({
-                        error: true,
-                        message: `${conflictingValue} ya existe en BD.`,
-                        data: {}
-                    });
-                }
-            }
-            /**
-             * Manejo de Errores generales de la BD.
-             */
-            return res.status(500).json({
-                error: true,
-                message: 'Hay problemas al procesar la solicitud.',
-                data: {
-                    error
-                }
-            });
+        } catch (error) {
+            return handleDatabaseError(error, res);
         }
     }
 
@@ -150,10 +126,8 @@ class EnterprisesController {
             nit = null,
             telefono = null,
             email = null
-        } = req.body;
-
-        // Validacion si idEmpresa no es un número o es <= 0
-        if (typeof idEmpresa === 'number' && !isNaN(idEmpresa) && idEmpresa > 0) {
+        }: modifyEnterpriseBody = req.body || {};
+        if (isValidNumber(idEmpresa)) {
             //Validacion de Data ingresada por los usuarios
             const { error } = enterpriseOptionalSchema.validate(req.body);
             if (error) {
@@ -165,7 +139,7 @@ class EnterprisesController {
             }
             try {
                 // Búsqueda de la existencia de la Empresa
-                let empresa = await Empresa.findOne({
+                let empresa: Awaited<ReturnType<typeof Empresa.findOne>> = await Empresa.findOne({
                     where: {
                         idEmpresa: idEmpresa
                     },
@@ -177,20 +151,18 @@ class EnterprisesController {
                         data: {}
                     });
                 }
-                // OBJETO DE DATOS MSSQL
-                const replacements: any = {
-                    idEmpresa,
-                    razon_social,
-                    nombre_comercial,
-                    nit,
-                    telefono,
-                    email
-                };
                 // Ejecucion el procedimiento almacenado
                 await sequelize.query(
                     'EXEC sp_Editar_Empresa :idEmpresa, :razon_social, :nombre_comercial, :nit, :telefono, :email',
                     {
-                        replacements: replacements
+                        replacements: {
+                            idEmpresa,
+                            razon_social,
+                            nombre_comercial,
+                            nit,
+                            telefono,
+                            email
+                        }
                     }
                 );
                 /**
@@ -201,32 +173,8 @@ class EnterprisesController {
                     message: 'Data de Empresa Modificada exitosamente.',
                     data: {},
                 });
-            } catch (error: any) {
-                /**
-                 * Condiciones de Datos Duplicados en restricciones de
-                 * UNIQUE
-                 */
-                if (error.name === 'SequelizeUniqueConstraintError') {
-                    const uniqueError = error.errors[0];
-                    const conflictingValue = uniqueError?.value
-                    if (uniqueError?.message.includes('must be unique')) {
-                        return res.status(409).json({
-                            error: true,
-                            message: `${conflictingValue} ya existe en DB.`,
-                            data: {}
-                        });
-                    }
-                }
-                /**
-                 * Manejo de Errores generales de la BD.
-                 */
-                return res.status(500).json({
-                    error: true,
-                    message: 'Hay problemas al procesar la solicitud.',
-                    data: {
-                        error
-                    }
-                });
+            } catch (error) {
+                return handleDatabaseError(error, res);
             }
         } else {
             return res.status(404).json({

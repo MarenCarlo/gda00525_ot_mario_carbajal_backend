@@ -19,6 +19,10 @@ DetalleOrden.init({
         type: DataTypes.INTEGER,
         allowNull: false,
     },
+    precio_venta: {
+        type: DataTypes.DECIMAL(9, 2),
+        allowNull: false,
+    },
     subtotal: {
         type: DataTypes.DECIMAL(9, 2),
         allowNull: false,

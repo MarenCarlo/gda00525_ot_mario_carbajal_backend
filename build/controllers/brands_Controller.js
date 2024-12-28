@@ -16,6 +16,9 @@ exports.brandsController = void 0;
 const connection_1 = __importDefault(require("../database/connection"));
 const brandController_joi_1 = require("../shared/joiDataValidations/brandController_joi");
 const tb_marcas_productos_1 = __importDefault(require("../models/tb_marcas_productos"));
+const handleDatabaseError_1 = require("../shared/handleDatabaseError");
+const inputTypesValidations_1 = require("../shared/inputTypesValidations");
+const formatText_1 = require("../shared/formatText");
 class BrandsController {
     /**
     * Este Endpoint sirve para obtener la data de las Marcas
@@ -42,12 +45,7 @@ class BrandsController {
                 });
             }
             catch (error) {
-                console.error(error);
-                return res.status(500).json({
-                    error: true,
-                    message: 'Hubo un problema al obtener las marcas.',
-                    data: { error }
-                });
+                return (0, handleDatabaseError_1.handleDatabaseError)(error, res);
             }
         });
     }
@@ -58,15 +56,8 @@ class BrandsController {
         return __awaiter(this, void 0, void 0, function* () {
             const ip = req.socket.remoteAddress;
             console.info(ip);
-            const { nombre, descripcion } = req.body;
-            let nombreFormatted;
-            if (nombre !== null && nombre !== undefined) {
-                nombreFormatted = nombre
-                    .toLowerCase()
-                    .split(' ')
-                    .map((palabra) => palabra.charAt(0).toUpperCase() + palabra.slice(1))
-                    .join(' ');
-            }
+            const { nombre, descripcion } = req.body || {};
+            let nombreFormatted = (0, formatText_1.formatText)(nombre);
             const { error } = brandController_joi_1.brandSchema.validate(req.body);
             if (error) {
                 return res.status(400).json({
@@ -96,31 +87,7 @@ class BrandsController {
                 });
             }
             catch (error) {
-                /**
-                 * Condiciones de Datos Duplicados en restricciones de
-                 * UNIQUE
-                 */
-                if (error.name === 'SequelizeUniqueConstraintError') {
-                    const uniqueError = error.errors[0];
-                    const conflictingValue = uniqueError === null || uniqueError === void 0 ? void 0 : uniqueError.value;
-                    if (uniqueError === null || uniqueError === void 0 ? void 0 : uniqueError.message.includes('must be unique')) {
-                        return res.status(409).json({
-                            error: true,
-                            message: `${conflictingValue} ya existe en BD.`,
-                            data: {}
-                        });
-                    }
-                }
-                /**
-                 * Manejo de Errores generales de la BD.
-                 */
-                return res.status(500).json({
-                    error: true,
-                    message: 'Hay problemas al procesar la solicitud.',
-                    data: {
-                        error
-                    }
-                });
+                return (0, handleDatabaseError_1.handleDatabaseError)(error, res);
             }
         });
     }
@@ -131,18 +98,12 @@ class BrandsController {
         return __awaiter(this, void 0, void 0, function* () {
             const ip = req.socket.remoteAddress;
             console.info(ip);
-            const { idMarcaProducto, nombre = null, descripcion = null } = req.body;
-            let nombreFormatted = null;
-            if (nombre !== null && nombre !== undefined) {
-                nombreFormatted = nombre
-                    .toLowerCase()
-                    .split(' ')
-                    .map((palabra) => palabra.charAt(0).toUpperCase() + palabra.slice(1))
-                    .join(' ');
+            const { idMarcaProducto, nombre = null, descripcion = null } = req.body || {};
+            let nombreFormatted = nombre;
+            if (nombreFormatted !== null) {
+                nombreFormatted = (0, formatText_1.formatText)(nombre);
             }
-            // Validacion si idCategoriaProducto no es un número o es <= 0
-            if (typeof idMarcaProducto === 'number' && !isNaN(idMarcaProducto) && idMarcaProducto > 0) {
-                //Validacion de Data ingresada por los usuarios
+            if ((0, inputTypesValidations_1.isValidNumber)(idMarcaProducto)) {
                 const { error } = brandController_joi_1.brandOptionalSchema.validate(req.body);
                 if (error) {
                     return res.status(400).json({
@@ -152,28 +113,26 @@ class BrandsController {
                     });
                 }
                 try {
-                    // Búsqueda de la existencia de la Empresa
-                    let categoriaProductoDB = yield tb_marcas_productos_1.default.findOne({
+                    // Búsqueda de la existencia de la Marca
+                    let marcaProductoDB = yield tb_marcas_productos_1.default.findOne({
                         where: {
                             idMarcaProducto: idMarcaProducto
                         },
                     });
-                    if (!categoriaProductoDB) {
+                    if (!marcaProductoDB) {
                         return res.status(403).json({
                             error: true,
                             message: "El ID de Marca que se busca modificar, no existe en BD.",
                             data: {}
                         });
                     }
-                    // OBJETO DE DATOS MSSQL
-                    const replacements = {
-                        idMarcaProducto,
-                        nombre: nombreFormatted,
-                        descripcion
-                    };
                     // Ejecucion el procedimiento almacenado
                     yield connection_1.default.query('EXEC sp_Editar_Marca_Producto :idMarcaProducto, :nombre, :descripcion;', {
-                        replacements: replacements
+                        replacements: {
+                            idMarcaProducto,
+                            nombre: nombreFormatted,
+                            descripcion
+                        }
                     });
                     /**
                      * Respuesta del Servidor
@@ -185,31 +144,7 @@ class BrandsController {
                     });
                 }
                 catch (error) {
-                    /**
-                     * Condiciones de Datos Duplicados en restricciones de
-                     * UNIQUE
-                     */
-                    if (error.name === 'SequelizeUniqueConstraintError') {
-                        const uniqueError = error.errors[0];
-                        const conflictingValue = uniqueError === null || uniqueError === void 0 ? void 0 : uniqueError.value;
-                        if (uniqueError === null || uniqueError === void 0 ? void 0 : uniqueError.message.includes('must be unique')) {
-                            return res.status(409).json({
-                                error: true,
-                                message: `${conflictingValue} ya existe en DB.`,
-                                data: {}
-                            });
-                        }
-                    }
-                    /**
-                     * Manejo de Errores generales de la BD.
-                     */
-                    return res.status(500).json({
-                        error: true,
-                        message: 'Hay problemas al procesar la solicitud.',
-                        data: {
-                            error
-                        }
-                    });
+                    return (0, handleDatabaseError_1.handleDatabaseError)(error, res);
                 }
             }
             else {

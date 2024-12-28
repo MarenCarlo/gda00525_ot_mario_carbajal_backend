@@ -39,7 +39,6 @@ class App {
         this.app.use((0, helmet_1.default)());
         // Ruta para archivos Estaticos: IMAGENES DE PRODUCTOS.
         this.app.use('/images/products', express_1.default.static(path_1.default.join(__dirname, '../images/products')));
-        //this.app.use('/images/products', express.static(path.join(__dirname, 'images/products')));
         // Configuraciones CORS para uso de Whitelist
         const whiteList = [process.env.CR_DOMAIN_1];
         var corsOptions = {

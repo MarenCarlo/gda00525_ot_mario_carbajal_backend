@@ -71,7 +71,7 @@ class AuthController {
                         {
                             model: Rol,
                             as: 'rol',
-                            attributes: ['idRol', 'rol'],
+                            attributes: ['idRol', 'nombre'],
                         },
                         {
                             model: Empresa,
@@ -125,9 +125,7 @@ class AuthController {
 
             /**
              * Construccion de JWT
-             * user.rol.idRol
              */
-            console.log(user)
             const token = jwt.sign({
                 idUsuario: user.idUsuario,
                 username: user.username,
@@ -150,7 +148,7 @@ class AuthController {
                     'auth-token': token
                 },
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
             /**
              * Manejo de Errores generales de la BD.
              */

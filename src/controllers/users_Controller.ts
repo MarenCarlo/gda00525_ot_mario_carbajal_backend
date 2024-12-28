@@ -3,6 +3,10 @@ import { userSchema, userStateSchema } from '../shared/joiDataValidations/userCo
 import sequelize from '../database/connection';
 import bcrypt from 'bcrypt';
 import Usuario from '../models/tb_usuarios';
+import { isValidNumber } from '../shared/inputTypesValidations';
+import { handleDatabaseError } from '../shared/handleDatabaseError';
+import { AddUsuario, modifyUsuario } from '../models/types/usersInterfaces';
+import { StoredProcedureResult } from '../models/types/promiseResultsInterfaces';
 
 class UsersController {
 
@@ -13,21 +17,21 @@ class UsersController {
         const ip = req.socket.remoteAddress;
         console.info(ip);
         const { idUsuario } = req.params;
+        let idUsuarioParsed = Number(idUsuario);
         try {
             let query = 'SELECT * FROM vw_Usuarios';
-            let replacements: any = [];
             if (idUsuario) {
-                if (typeof idUsuario === 'number' && !isNaN(idUsuario) && idUsuario > 0) {
+                if (isValidNumber(idUsuarioParsed)) {
+                    query += ` WHERE idUsuario = ${Number(idUsuario)}`;
+                } else {
                     return res.status(400).json({
                         error: true,
                         message: 'El ID de usuario no es válido.',
                         data: {}
                     });
                 }
-                query += ` WHERE idUsuario = ${Number(idUsuario)}`;
             }
             const usuarios = await sequelize.query(query, {
-                replacements,
                 type: 'SELECT'
             });
             if (!usuarios) {
@@ -42,14 +46,8 @@ class UsersController {
                 message: 'Usuarios obtenidos exitosamente.',
                 data: usuarios
             });
-        } catch (error: any) {
-            return res.status(500).json({
-                error: true,
-                message: 'Hubo un error al obtener los usuarios.',
-                data: {
-                    error
-                }
-            });
+        } catch (error) {
+            return handleDatabaseError(error, res);
         }
     }
 
@@ -73,7 +71,7 @@ class UsersController {
             empresa_idEmpresa,
             isSuperUser = 0,
             isActive = 0,
-        } = req.body;
+        }: AddUsuario = req.body || {};
         const { error } = userSchema.validate(req.body);
         if (error) {
             return res.status(400).json({
@@ -91,7 +89,7 @@ class UsersController {
             /**
              * Ejecucion del Procedimiento Almacenado
              */
-            const result: any = await sequelize.query(
+            const result = await sequelize.query(
                 'EXEC sp_Crear_Usuario :nombre_completo, :username, :passphrase, :telefono, :email, :direccion, :fecha_nacimiento, :isSuperUser, :isActive, :rol_idRol, :empresa_idEmpresa',
                 {
                     replacements: {
@@ -108,7 +106,7 @@ class UsersController {
                         empresa_idEmpresa,
                     }
                 }
-            );
+            ) as StoredProcedureResult;
             /**
              * Respuesta del servidor
              */
@@ -118,32 +116,8 @@ class UsersController {
                 message: 'Usuario agregado exitosamente.',
                 data: { nuevoID },
             });
-        } catch (error: any) {
-            /**
-             * Condiciones de Datos Duplicados en restricciones de
-             * UNIQUE
-             */
-            if (error.name === 'SequelizeUniqueConstraintError') {
-                const uniqueError = error.errors[0];
-                const conflictingValue = uniqueError?.value
-                if (uniqueError?.message.includes('must be unique')) {
-                    return res.status(409).json({
-                        error: true,
-                        message: `${conflictingValue} ya está en uso.`,
-                        data: {}
-                    });
-                }
-            }
-            /**
-             * Manejo de Errores generales de la BD.
-             */
-            return res.status(500).json({
-                error: true,
-                message: 'Hay problemas al procesar la solicitud.',
-                data: {
-                    error
-                }
-            });
+        } catch (error) {
+            return handleDatabaseError(error, res);
         }
     }
 
@@ -165,11 +139,10 @@ class UsersController {
             fecha_nacimiento = null,
             rol_idRol = null,
             empresa_idEmpresa = null
-        } = req.body;
+        }: modifyUsuario = req.body || {};
         const user = req.user;
-
         // Validacion si idUsuario no es un número o es <= 0
-        if (typeof idUsuario === 'number' && !isNaN(idUsuario) && idUsuario > 0) {
+        if (isValidNumber(idUsuario)) {
             const { error } = userStateSchema.validate(req.body);
             if (error) {
                 return res.status(400).json({
@@ -179,7 +152,7 @@ class UsersController {
                 });
             }
 
-            // Validación de si el idUsuario es igual al usuario en sesión PARA CASOS DE INTENTO DE DESACTIVACION
+            // Validación de si el idUsuario es igual al usuario en sesión PARA CASOS DE INTENTO DE DESACTIVACION DEL PROPIO USUARIO
             if (newStateValue !== undefined && newStateValue !== null && idUsuario === user!.idUsuario) {
                 return res.status(404).json({
                     error: true,
@@ -190,7 +163,7 @@ class UsersController {
 
             try {
                 // Búsqueda de la existencia del Usuario
-                let user = await Usuario.findOne({
+                let user: Usuario | null = await Usuario.findOne({
                     where: {
                         idUsuario: idUsuario
                     },
@@ -204,7 +177,7 @@ class UsersController {
                     });
                 }
 
-                // Verificación de si el usuario es un superusuario activo PARA CASOS DE INTENTO DE DESACTIVACION
+                // Verificación de si el usuario es un superusuario activo PARA CASOS DE INTENTO DE DESACTIVACION DE SUPER USUARIO
                 if (newStateValue !== undefined && newStateValue !== null && user.isSuperUser === true && user.isActive === true) {
                     return res.status(403).json({
                         error: true,
@@ -212,26 +185,25 @@ class UsersController {
                         data: {}
                     });
                 }
-                // OBJETO DE DATOS MSSQL
-                const replacements: any = {
-                    idUsuario: idUsuario,
-                    nombre_completo: nombre_completo,
-                    username: username,
-                    passphrase: null,
-                    telefono: telefono,
-                    email: email,
-                    direccion: direccion,
-                    fecha_nacimiento: fecha_nacimiento,
-                    isSuperUser: null,
-                    isActive: newStateValue,
-                    rol_idRol: rol_idRol,
-                    empresa_idEmpresa: empresa_idEmpresa
-                };
+
                 // Ejecucion el procedimiento almacenado
                 await sequelize.query(
                     'EXEC sp_Editar_Usuario :idUsuario, :nombre_completo, :username, :passphrase, :telefono, :email, :direccion, :fecha_nacimiento, :isSuperUser, :isActive, :rol_idRol, :empresa_idEmpresa;',
                     {
-                        replacements: replacements
+                        replacements: {
+                            idUsuario: idUsuario,
+                            nombre_completo: nombre_completo,
+                            username: username,
+                            passphrase: null,
+                            telefono: telefono,
+                            email: email,
+                            direccion: direccion,
+                            fecha_nacimiento: fecha_nacimiento,
+                            isSuperUser: null,
+                            isActive: newStateValue,
+                            rol_idRol: rol_idRol,
+                            empresa_idEmpresa: empresa_idEmpresa
+                        }
                     }
                 );
                 /**
@@ -243,32 +215,8 @@ class UsersController {
                     data: {},
                 });
 
-            } catch (error: any) {
-                /**
-                 * Condiciones de Datos Duplicados en restricciones de
-                 * UNIQUE
-                 */
-                if (error.name === 'SequelizeUniqueConstraintError') {
-                    const uniqueError = error.errors[0];
-                    const conflictingValue = uniqueError?.value
-                    if (uniqueError?.message.includes('must be unique')) {
-                        return res.status(409).json({
-                            error: true,
-                            message: `${conflictingValue} ya está en uso.`,
-                            data: {}
-                        });
-                    }
-                }
-                /**
-                 * Manejo de Errores generales de la BD.
-                 */
-                return res.status(500).json({
-                    error: true,
-                    message: 'Hay problemas al procesar la solicitud.',
-                    data: {
-                        error
-                    }
-                });
+            } catch (error) {
+                return handleDatabaseError(error, res);
             }
         } else {
             return res.status(404).json({

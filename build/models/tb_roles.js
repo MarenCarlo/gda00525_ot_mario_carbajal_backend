@@ -13,7 +13,7 @@ Rol.init({
         primaryKey: true,
         autoIncrement: true,
     },
-    rol: {
+    nombre: {
         type: sequelize_1.DataTypes.STRING(32),
         allowNull: false,
         unique: true,

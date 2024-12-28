@@ -16,6 +16,9 @@ exports.categoriesController = void 0;
 const categoryController_joi_1 = require("../shared/joiDataValidations/categoryController_joi");
 const connection_1 = __importDefault(require("../database/connection"));
 const tb_categorias_productos_1 = __importDefault(require("../models/tb_categorias_productos"));
+const handleDatabaseError_1 = require("../shared/handleDatabaseError");
+const inputTypesValidations_1 = require("../shared/inputTypesValidations");
+const formatText_1 = require("../shared/formatText");
 class CategoriesController {
     /**
      * Este Endpoint sirve para obtener la data de las Categorias
@@ -42,12 +45,7 @@ class CategoriesController {
                 });
             }
             catch (error) {
-                console.error(error);
-                return res.status(500).json({
-                    error: true,
-                    message: 'Hubo un problema al obtener las Categorias.',
-                    data: { error }
-                });
+                return (0, handleDatabaseError_1.handleDatabaseError)(error, res);
             }
         });
     }
@@ -58,15 +56,8 @@ class CategoriesController {
         return __awaiter(this, void 0, void 0, function* () {
             const ip = req.socket.remoteAddress;
             console.info(ip);
-            const { nombre, descripcion } = req.body;
-            let nombreFormatted;
-            if (nombre !== null && nombre !== undefined) {
-                nombreFormatted = nombre
-                    .toLowerCase()
-                    .split(' ')
-                    .map((palabra) => palabra.charAt(0).toUpperCase() + palabra.slice(1))
-                    .join(' ');
-            }
+            const { nombre, descripcion } = req.body || {};
+            let nombreFormatted = (0, formatText_1.formatText)(nombre);
             const { error } = categoryController_joi_1.categorySchema.validate(req.body);
             if (error) {
                 return res.status(400).json({
@@ -96,31 +87,7 @@ class CategoriesController {
                 });
             }
             catch (error) {
-                /**
-                 * Condiciones de Datos Duplicados en restricciones de
-                 * UNIQUE
-                 */
-                if (error.name === 'SequelizeUniqueConstraintError') {
-                    const uniqueError = error.errors[0];
-                    const conflictingValue = uniqueError === null || uniqueError === void 0 ? void 0 : uniqueError.value;
-                    if (uniqueError === null || uniqueError === void 0 ? void 0 : uniqueError.message.includes('must be unique')) {
-                        return res.status(409).json({
-                            error: true,
-                            message: `${conflictingValue} ya existe en BD.`,
-                            data: {}
-                        });
-                    }
-                }
-                /**
-                 * Manejo de Errores generales de la BD.
-                 */
-                return res.status(500).json({
-                    error: true,
-                    message: 'Hay problemas al procesar la solicitud.',
-                    data: {
-                        error
-                    }
-                });
+                return (0, handleDatabaseError_1.handleDatabaseError)(error, res);
             }
         });
     }
@@ -131,18 +98,12 @@ class CategoriesController {
         return __awaiter(this, void 0, void 0, function* () {
             const ip = req.socket.remoteAddress;
             console.info(ip);
-            const { idCategoriaProducto, nombre = null, descripcion = null } = req.body;
-            let nombreFormatted = null;
-            if (nombre !== null && nombre !== undefined) {
-                nombreFormatted = nombre
-                    .toLowerCase()
-                    .split(' ')
-                    .map((palabra) => palabra.charAt(0).toUpperCase() + palabra.slice(1))
-                    .join(' ');
+            const { idCategoriaProducto, nombre = null, descripcion = null } = req.body || {};
+            let nombreFormatted = nombre;
+            if (nombreFormatted !== null) {
+                nombreFormatted = (0, formatText_1.formatText)(nombre);
             }
-            // Validacion si idCategoriaProducto no es un número o es <= 0
-            if (typeof idCategoriaProducto === 'number' && !isNaN(idCategoriaProducto) && idCategoriaProducto > 0) {
-                //Validacion de Data ingresada por los usuarios
+            if ((0, inputTypesValidations_1.isValidNumber)(idCategoriaProducto)) {
                 const { error } = categoryController_joi_1.categoryOptionalSchema.validate(req.body);
                 if (error) {
                     return res.status(400).json({
@@ -152,7 +113,7 @@ class CategoriesController {
                     });
                 }
                 try {
-                    // Búsqueda de la existencia de la Empresa
+                    // Búsqueda de la existencia de la Categoría
                     let categoriaProductoDB = yield tb_categorias_productos_1.default.findOne({
                         where: {
                             idCategoriaProducto: idCategoriaProducto
@@ -165,15 +126,13 @@ class CategoriesController {
                             data: {}
                         });
                     }
-                    // OBJETO DE DATOS MSSQL
-                    const replacements = {
-                        idCategoriaProducto,
-                        nombre: nombreFormatted,
-                        descripcion
-                    };
                     // Ejecucion el procedimiento almacenado
                     yield connection_1.default.query('EXEC sp_Editar_Categoria_Producto :idCategoriaProducto, :nombre, :descripcion;', {
-                        replacements: replacements
+                        replacements: {
+                            idCategoriaProducto,
+                            nombre: nombreFormatted,
+                            descripcion
+                        }
                     });
                     /**
                      * Respuesta del Servidor
@@ -185,31 +144,7 @@ class CategoriesController {
                     });
                 }
                 catch (error) {
-                    /**
-                     * Condiciones de Datos Duplicados en restricciones de
-                     * UNIQUE
-                     */
-                    if (error.name === 'SequelizeUniqueConstraintError') {
-                        const uniqueError = error.errors[0];
-                        const conflictingValue = uniqueError === null || uniqueError === void 0 ? void 0 : uniqueError.value;
-                        if (uniqueError === null || uniqueError === void 0 ? void 0 : uniqueError.message.includes('must be unique')) {
-                            return res.status(409).json({
-                                error: true,
-                                message: `${conflictingValue} ya existe en DB.`,
-                                data: {}
-                            });
-                        }
-                    }
-                    /**
-                     * Manejo de Errores generales de la BD.
-                     */
-                    return res.status(500).json({
-                        error: true,
-                        message: 'Hay problemas al procesar la solicitud.',
-                        data: {
-                            error
-                        }
-                    });
+                    return (0, handleDatabaseError_1.handleDatabaseError)(error, res);
                 }
             }
             else {

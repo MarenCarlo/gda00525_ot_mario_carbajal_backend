@@ -43,7 +43,6 @@ class App {
 
         // Ruta para archivos Estaticos: IMAGENES DE PRODUCTOS.
         this.app.use('/images/products', express.static(path.join(__dirname, '../images/products')));
-        //this.app.use('/images/products', express.static(path.join(__dirname, 'images/products')));
 
         // Configuraciones CORS para uso de Whitelist
         const whiteList = [process.env.CR_DOMAIN_1];
