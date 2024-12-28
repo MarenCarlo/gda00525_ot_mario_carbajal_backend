@@ -22,7 +22,7 @@ class ProductsRouter {
         this.router.get('/getIngresosStock', validateToken, validateAdmin, productsController.getIngresosStock);
         this.router.post('/addStockEntry', validateToken, validateAdmin, productsController.addStockIngreso);
         this.router.put('/modifyStockEntry', validateToken, validateAdmin, validateSuperUser, productsController.modifyStockIngreso);
-        this.router.put('/modifyStatusProduct', validateToken, validateAdmin, validateSuperUser, productsController.modifyStatusProduct);
+        this.router.put('/modifyStatusProduct', validateToken, validateAdmin, productsController.modifyStatusProduct);
     }
 }
 

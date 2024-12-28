@@ -16,6 +16,9 @@ exports.rolesController = void 0;
 const connection_1 = __importDefault(require("../database/connection"));
 const tb_roles_1 = __importDefault(require("../models/tb_roles"));
 const roleController_joi_1 = require("../shared/joiDataValidations/roleController_joi");
+const handleDatabaseError_1 = require("../shared/handleDatabaseError");
+const inputTypesValidations_1 = require("../shared/inputTypesValidations");
+const formatText_1 = require("../shared/formatText");
 class RolesController {
     getRoles(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -23,7 +26,7 @@ class RolesController {
             console.info(ip);
             try {
                 const roles = yield tb_roles_1.default.findAll({
-                    attributes: ['idRol', 'rol', 'descripcion'],
+                    attributes: ['idRol', 'nombre', 'descripcion'],
                 });
                 if (roles.length === 0) {
                     return res.status(404).json({
@@ -39,12 +42,7 @@ class RolesController {
                 });
             }
             catch (error) {
-                console.error(error);
-                return res.status(500).json({
-                    error: true,
-                    message: 'Hubo un problema al obtener los Roles.',
-                    data: { error }
-                });
+                return (0, handleDatabaseError_1.handleDatabaseError)(error, res);
             }
         });
     }
@@ -55,10 +53,12 @@ class RolesController {
         return __awaiter(this, void 0, void 0, function* () {
             const ip = req.socket.remoteAddress;
             console.info(ip);
-            const { idRol, rol = null, descripcion = null } = req.body;
-            // Validacion si idRol no es un número o es <= 0
-            if (typeof idRol === 'number' && !isNaN(idRol) && idRol > 0) {
-                //Validacion de Data ingresada por los usuarios
+            const { idRol, nombre = null, descripcion = null } = req.body || {};
+            let nombreFormatted = nombre;
+            if (nombreFormatted !== null) {
+                nombreFormatted = (0, formatText_1.formatText)(nombre);
+            }
+            if ((0, inputTypesValidations_1.isValidNumber)(idRol)) {
                 const { error } = roleController_joi_1.roleOptionalSchema.validate(req.body);
                 if (error) {
                     return res.status(400).json({
@@ -68,28 +68,26 @@ class RolesController {
                     });
                 }
                 try {
-                    // Búsqueda de la existencia de la Empresa
-                    let empresa = yield tb_roles_1.default.findOne({
+                    // Búsqueda de la existencia del rol
+                    let rolDB = yield tb_roles_1.default.findOne({
                         where: {
                             idRol: idRol
                         },
                     });
-                    if (!empresa) {
+                    if (!rolDB) {
                         return res.status(403).json({
                             error: true,
                             message: "El ID del Rol que se busca modificar, no existe en BD.",
                             data: {}
                         });
                     }
-                    // OBJETO DE DATOS MSSQL
-                    const replacements = {
-                        idRol,
-                        rol,
-                        descripcion
-                    };
                     // Ejecucion el procedimiento almacenado
-                    yield connection_1.default.query('EXEC sp_Editar_Rol :idRol, :rol, :descripcion', {
-                        replacements: replacements
+                    yield connection_1.default.query('EXEC sp_Editar_Rol :idRol, :nombre, :descripcion', {
+                        replacements: {
+                            idRol,
+                            nombre,
+                            descripcion
+                        }
                     });
                     /**
                      * Respuesta del Servidor
@@ -101,31 +99,7 @@ class RolesController {
                     });
                 }
                 catch (error) {
-                    /**
-                     * Condiciones de Datos Duplicados en restricciones de
-                     * UNIQUE
-                     */
-                    if (error.name === 'SequelizeUniqueConstraintError') {
-                        const uniqueError = error.errors[0];
-                        const conflictingValue = uniqueError === null || uniqueError === void 0 ? void 0 : uniqueError.value;
-                        if (uniqueError === null || uniqueError === void 0 ? void 0 : uniqueError.message.includes('must be unique')) {
-                            return res.status(409).json({
-                                error: true,
-                                message: `${conflictingValue} ya existe en DB.`,
-                                data: {}
-                            });
-                        }
-                    }
-                    /**
-                     * Manejo de Errores generales de la BD.
-                     */
-                    return res.status(500).json({
-                        error: true,
-                        message: 'Hay problemas al procesar la solicitud.',
-                        data: {
-                            error
-                        }
-                    });
+                    return (0, handleDatabaseError_1.handleDatabaseError)(error, res);
                 }
             }
             else {

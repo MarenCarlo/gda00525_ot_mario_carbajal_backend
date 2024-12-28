@@ -12,7 +12,7 @@ class Producto extends Model {
     public precio_venta!: number;
     public fecha_creacion!: Date;
     public stock!: number;
-    public imagen!: Buffer;
+    public imagen!: string;
     public isActive!: boolean;
     public categoria_idCategoria!: number;
     public marca_idMarca!: number;

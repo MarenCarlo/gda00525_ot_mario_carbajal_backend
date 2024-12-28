@@ -11,7 +11,7 @@ export const roleOptionalSchema = Joi.object({
         'string.empty': 'El id no puede estar vacío.',
         'any.required': 'El Identificador es Obligatorio.',
     }),
-    rol: Joi.string().min(3).max(32).allow(null).messages({
+    nombre: Joi.string().min(3).max(32).allow(null).messages({
         'string.base': 'El rol debe ser de tipo texto.',
         'string.min': 'El rol debe tener al menos 3 caracteres.',
         'string.max': 'El rol no puede superar los 32 caracteres.',

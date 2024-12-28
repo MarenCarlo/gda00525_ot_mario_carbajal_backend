@@ -6,6 +6,10 @@ import { upload } from '../shared/multerConfig';
 import path from 'path';
 import fs from 'fs';
 import IngresoProductoStock from '../models/tb_ingresos_productos_stock';
+import { isValidNumber } from '../shared/inputTypesValidations';
+import { handleDatabaseError } from '../shared/handleDatabaseError';
+import { StoredProcedureResult } from '../models/types/promiseResultsInterfaces';
+import { AddProductRequestBody, addProductData, UploadedFile, modifyProductData, AddStockRequestBody, AddStockQueryResult, IngresoStock, ModifyStockRequestBody, ModifyStatusProduct } from '../models/types/productstInterfaces';
 
 class ProductsController {
 
@@ -17,21 +21,21 @@ class ProductsController {
         const ip = req.socket.remoteAddress;
         console.info(ip);
         const { idProducto } = req.params;
+        let idProductoParsed = Number(idProducto);
         try {
             let query = 'SELECT * FROM vw_Productos_Publico';
-            let replacements: any = [];
             if (idProducto) {
-                if (typeof idProducto === 'number' && !isNaN(idProducto) && idProducto > 0) {
+                if (isValidNumber(idProductoParsed)) {
+                    query += ` WHERE idProducto = ${Number(idProducto)}`;
+                } else {
                     return res.status(400).json({
                         error: true,
                         message: 'El ID de producto no es válido.',
                         data: {}
                     });
                 }
-                query += ` WHERE idProducto = ${Number(idProducto)}`;
             }
             const productos = await sequelize.query(query, {
-                replacements,
                 type: 'SELECT'
             });
             if (!productos) {
@@ -46,14 +50,8 @@ class ProductsController {
                 message: 'Productos obtenidos exitosamente.',
                 data: productos
             });
-        } catch (error: any) {
-            return res.status(500).json({
-                error: true,
-                message: 'Hubo un error al obtener los productos.',
-                data: {
-                    error
-                }
-            });
+        } catch (error) {
+            return handleDatabaseError(error, res);
         }
     }
 
@@ -65,21 +63,21 @@ class ProductsController {
         const ip = req.socket.remoteAddress;
         console.info(ip);
         const { idProducto } = req.params;
+        let idProductoParsed = Number(idProducto);
         try {
             let query = 'SELECT * FROM vw_Productos_Internos';
-            let replacements: any = [];
             if (idProducto) {
-                if (typeof idProducto === 'number' && !isNaN(idProducto) && idProducto > 0) {
+                if (isValidNumber(idProductoParsed)) {
+                    query += ` WHERE idProducto = ${Number(idProducto)}`;
+                } else {
                     return res.status(400).json({
                         error: true,
                         message: 'El ID de producto no es válido.',
                         data: {}
                     });
                 }
-                query += ` WHERE idProducto = ${Number(idProducto)}`;
             }
             const productos = await sequelize.query(query, {
-                replacements,
                 type: 'SELECT'
             });
             if (!productos) {
@@ -94,14 +92,8 @@ class ProductsController {
                 message: 'Productos obtenidos exitosamente.',
                 data: productos
             });
-        } catch (error: any) {
-            return res.status(500).json({
-                error: true,
-                message: 'Hubo un error al obtener los productos.',
-                data: {
-                    error
-                }
-            });
+        } catch (error) {
+            return handleDatabaseError(error, res);
         }
     }
 
@@ -115,11 +107,13 @@ class ProductsController {
          * Funcion para manejo de subida de imagenes a Servidor.
          */
         upload.single('image')(req, res, async (err) => {
-            // Validación de datos del usuario con Joi
             const {
                 jsonData
-            } = req.body
-            let productData = JSON.parse(jsonData);
+            }: AddProductRequestBody = req.body || {};
+            const file = req.file as UploadedFile;
+            let productData: addProductData;
+            productData = JSON.parse(jsonData);
+            // Validación de datos del usuario con Joi
             const { error } = productSchema.validate(productData);
             if (error) {
                 if (req.file) {
@@ -131,7 +125,6 @@ class ProductsController {
                     data: {}
                 });
             }
-
             const {
                 codigo,
                 nombre,
@@ -143,8 +136,8 @@ class ProductsController {
              * Manejo de Errores en subida de imagenes
              */
             if (err) {
-                if (req.file) {
-                    fs.unlinkSync(req.file.path);
+                if (file) {
+                    fs.unlinkSync(file.path);
                 }
                 return res.status(400).json({
                     error: true,
@@ -152,37 +145,33 @@ class ProductsController {
                     data: {}
                 });
             }
-            if (!req.file) {
+            if (!file) {
                 return res.status(400).json({
                     error: true,
                     message: 'La imagen es obligatoria.',
                     data: {}
                 });
             }
-
             try {
                 // Obtener la ruta de la imagen subida desde req.file
-                const imageUrl = req.file ? `/images/products/${req.file.filename}` : '';
-
-                // OBJETO DE DATOS MSSQL
-                const replacements: any = {
-                    codigo,
-                    nombre,
-                    descripcion,
-                    imagen: imageUrl,
-                    isActive: false,
-                    categoria_idCategoria,
-                    marca_idMarca
-                };
+                const imageUrl = file ? `/images/products/${file.filename}` : '';
                 /**
                  * Ejecucion del Procedimiento Almacenado
                  */
-                const result: any = await sequelize.query(
+                const result = await sequelize.query(
                     'EXEC sp_Crear_Producto :codigo, :nombre, :descripcion, :imagen, :isActive, :categoria_idCategoria, :marca_idMarca;',
                     {
-                        replacements: replacements
+                        replacements: {
+                            codigo,
+                            nombre,
+                            descripcion,
+                            imagen: imageUrl,
+                            isActive: false,
+                            categoria_idCategoria,
+                            marca_idMarca
+                        }
                     }
-                );
+                ) as StoredProcedureResult;
                 /**
                  * Respuesta del servidor
                  */
@@ -192,35 +181,11 @@ class ProductsController {
                     message: 'Producto agregado exitosamente',
                     data: { nuevoID },
                 });
-            } catch (error: any) {
-                if (req.file) {
-                    fs.unlinkSync(req.file.path);
+            } catch (error) {
+                if (file) {
+                    fs.unlinkSync(file.path);
                 }
-                /**
-                 * Condiciones de Datos Duplicados en restricciones de
-                 * UNIQUE
-                 */
-                if (error.name === 'SequelizeUniqueConstraintError') {
-                    const uniqueError = error.errors[0];
-                    const conflictingValue = uniqueError?.value
-                    if (uniqueError?.message.includes('must be unique')) {
-                        return res.status(409).json({
-                            error: true,
-                            message: `${conflictingValue} ya existe en la Base de Datos.`,
-                            data: {}
-                        });
-                    }
-                }
-                /**
-                 * Manejo de Errores generales de la BD.
-                 */
-                return res.status(500).json({
-                    error: true,
-                    message: 'Hay problemas al procesar la solicitud.',
-                    data: {
-                        error
-                    }
-                });
+                return handleDatabaseError(error, res);
             }
         });
     }
@@ -235,15 +200,17 @@ class ProductsController {
          * Funcion para manejo de subida de imagenes a Servidor.
          */
         upload.single('image')(req, res, async (err) => {
-            // Validación de datos del usuario con Joi
             const {
                 jsonData
-            } = req.body
-            let productData = JSON.parse(jsonData);
+            }: AddProductRequestBody = req.body || {};
+            const file = req.file as UploadedFile;
+            let productData: modifyProductData;
+            productData = JSON.parse(jsonData);
+            // Validación de datos del usuario con Joi
             const { error } = productOptionalSchema.validate(productData);
             if (error) {
-                if (req.file) {
-                    fs.unlinkSync(req.file.path);
+                if (file) {
+                    fs.unlinkSync(file.path);
                 }
                 return res.status(400).json({
                     error: true,
@@ -263,8 +230,8 @@ class ProductsController {
              * Manejo de Errores en subida de imagenes
              */
             if (err) {
-                if (req.file) {
-                    fs.unlinkSync(req.file.path);
+                if (file) {
+                    fs.unlinkSync(file.path);
                 }
                 return res.status(400).json({
                     error: true,
@@ -272,11 +239,10 @@ class ProductsController {
                     data: {}
                 });
             }
-            // Validacion si idProducto no es un número o es <= 0
-            if (typeof idProducto === 'number' && !isNaN(idProducto) && idProducto > 0) {
+            if (isValidNumber(idProducto)) {
                 try {
                     // Búsqueda de la existencia del producto a modificar
-                    let productoDB: any = await Producto.findOne({
+                    let productoDB: Awaited<Producto> | null = await Producto.findOne({
                         where: {
                             idProducto: idProducto
                         },
@@ -295,9 +261,9 @@ class ProductsController {
                      */
                     // Obtener la ruta de la imagen subida desde req.file
                     let imageUrl: string | null = null;
-                    if (req.file) {
+                    if (file) {
                         // Se crea nueva ruta de imagen y nombre de archivo con extensión.
-                        imageUrl = `/images/products/${req.file.filename}`;
+                        imageUrl = `/images/products/${file.filename}`;
                         // Se Obtiene el nombre de la imagen de producto antigua
                         const filePath = productoDB.imagen.split('/products/')[1];
                         // Obtener la ruta completa del servidor de la imagen antigua
@@ -312,9 +278,8 @@ class ProductsController {
                             fs.unlinkSync(relativePath);
                         }
                     }
-
                     // OBJETO DE DATOS MSSQLs
-                    const replacements: any = {
+                    const replacements: modifyProductData = {
                         idProducto,
                         codigo,
                         nombre,
@@ -339,35 +304,11 @@ class ProductsController {
                         message: 'Data de Producto modificada exitosamente.',
                         data: {},
                     });
-                } catch (error: any) {
-                    if (req.file) {
-                        fs.unlinkSync(req.file.path);
+                } catch (error) {
+                    if (file) {
+                        fs.unlinkSync(file.path);
                     }
-                    /**
-                     * Condiciones de Datos Duplicados en restricciones de
-                     * UNIQUE
-                     */
-                    if (error.name === 'SequelizeUniqueConstraintError') {
-                        const uniqueError = error.errors[0];
-                        const conflictingValue = uniqueError?.value
-                        if (uniqueError?.message.includes('must be unique')) {
-                            return res.status(409).json({
-                                error: true,
-                                message: `${conflictingValue} ya existe en la Base de Datos.`,
-                                data: {}
-                            });
-                        }
-                    }
-                    /**
-                     * Manejo de Errores generales de la BD.
-                     */
-                    return res.status(500).json({
-                        error: true,
-                        message: 'Hay problemas al procesar la solicitud.',
-                        data: {
-                            error
-                        }
-                    });
+                    return handleDatabaseError(error, res);
                 }
             } else {
                 return res.status(404).json({
@@ -388,10 +329,16 @@ class ProductsController {
         console.info(ip);
         try {
             let query = 'SELECT * FROM vw_Ingresos_Stock ORDER BY fecha_creacion DESC;';
-            const productos = await sequelize.query(query, {
-                type: 'SELECT'
-            });
-            if (!productos) {
+            const [rawResult] = await sequelize.query(query);
+            if (!Array.isArray(rawResult)) {
+                return res.status(500).json({
+                    error: true,
+                    message: 'El resultado de la consulta no es válido.',
+                    data: {}
+                });
+            }
+            const ingresosDB: IngresoStock[] = rawResult as IngresoStock[];
+            if (ingresosDB.length === 0) {
                 return res.status(404).json({
                     error: true,
                     message: 'No se encontraron ingresos.',
@@ -401,16 +348,10 @@ class ProductsController {
             return res.status(200).json({
                 error: false,
                 message: 'Ingresos obtenidos exitosamente.',
-                data: productos
+                data: ingresosDB
             });
-        } catch (error: any) {
-            return res.status(500).json({
-                error: true,
-                message: 'Hubo un error al obtener los ingresos.',
-                data: {
-                    error
-                }
-            });
+        } catch (error) {
+            return handleDatabaseError(error, res);
         }
     }
 
@@ -420,13 +361,13 @@ class ProductsController {
     public async addStockIngreso(req: Request, res: Response) {
         const ip = req.socket.remoteAddress;
         console.info(ip);
-        //Validacion de Data ingresada por los usuarios
         const {
             cantidad,
             precio_compra,
             precio_venta,
             producto_idProducto
-        } = req.body;
+        }: AddStockRequestBody = req.body || {};
+        //Validacion de Data ingresada por los usuarios
         const { error } = ingressSchema.validate(req.body);
         if (error) {
             return res.status(400).json({
@@ -436,8 +377,7 @@ class ProductsController {
             });
         }
         try {
-            // Búsqueda de la existencia del producto a modificar
-            let productoDB: any = await Producto.findOne({
+            let productoDB: Awaited<Producto> | null = await Producto.findOne({
                 where: {
                     idProducto: producto_idProducto
                 },
@@ -452,7 +392,7 @@ class ProductsController {
             /**
              * Ejecucion del Procedimiento Almacenado
              */
-            const result: any = await sequelize.query(
+            const result = await sequelize.query(
                 'EXEC sp_Agregar_Ingreso_Stock_Producto :cantidad, :precio_compra, :precio_venta, :producto_idProducto;',
                 {
                     replacements: {
@@ -462,29 +402,18 @@ class ProductsController {
                         producto_idProducto
                     }
                 }
-            );
+            ) as AddStockQueryResult;
             /**
              * Respuesta del servidor
              */
             const newStock = result[0][0].nuevo_stock
-            console.log(newStock)
             return res.status(201).json({
                 error: false,
                 message: `El nuevo stock del producto es: ${newStock}`,
                 data: { newStock },
             });
-        } catch (error: any) {
-            /**
-             * Manejo de Errores generales de la BD.
-             */
-            console.log(error)
-            return res.status(500).json({
-                error: true,
-                message: 'Hay problemas al procesar la solicitud.',
-                data: {
-                    error
-                }
-            });
+        } catch (error) {
+            return handleDatabaseError(error, res);
         }
     }
 
@@ -494,13 +423,13 @@ class ProductsController {
     public async modifyStockIngreso(req: Request, res: Response) {
         const ip = req.socket.remoteAddress;
         console.info(ip);
-        //Validacion de Data ingresada por los usuarios
         const {
             idIngresoStock,
             cantidad = null,
             precio_compra = null,
             precio_venta = null
-        } = req.body;
+        }: ModifyStockRequestBody = req.body || {};
+        //Validacion de Data ingresada por los usuarios
         const { error } = ingressOptionalSchema.validate(req.body);
         if (error) {
             return res.status(400).json({
@@ -510,69 +439,86 @@ class ProductsController {
             });
         }
         try {
-            // Búsqueda de la existencia del producto a modificar
-            let ingresoStockDB: any = await IngresoProductoStock.findOne({
-                where: {
-                    idIngresoStock: idIngresoStock
-                },
-            });
-            if (!ingresoStockDB) {
-                return res.status(404).json({
+            if (isValidNumber(idIngresoStock)) {
+                if (cantidad !== null && !isValidNumber(cantidad)) {
+                    return res.status(400).json({
+                        error: true,
+                        message: 'La nueva cantidad de Ingreso no es válida.',
+                        data: { cantidad }
+                    });
+                }
+                // Búsqueda del ingreso del producto a modificar
+                let ingresoStockDB: Awaited<IngresoProductoStock> | null = await IngresoProductoStock.findOne({
+                    where: {
+                        idIngresoStock: idIngresoStock
+                    },
+                });
+                if (!ingresoStockDB) {
+                    return res.status(404).json({
+                        error: true,
+                        message: 'El ID del ingreso a modificar, no existe en DB.',
+                        data: {},
+                    });
+                }
+                let productoDB: Awaited<Producto> | null = await Producto.findOne({
+                    where: {
+                        idProducto: ingresoStockDB.producto_idProducto
+                    },
+                });
+                if (!productoDB) {
+                    return res.status(404).json({
+                        error: true,
+                        message: 'El ID del producto a modificar, no existe en DB.',
+                        data: {},
+                    });
+                }
+                /**
+                 * Ejecucion del Procedimiento Almacenado
+                 */
+                const result = await sequelize.query(
+                    'EXEC sp_Editar_Ingreso_Stock_Producto :idIngresoStock, :cantidad, :precio_compra, :precio_venta, :producto_idProducto;',
+                    {
+                        replacements: {
+                            idIngresoStock,
+                            cantidad,
+                            precio_compra,
+                            precio_venta,
+                            producto_idProducto: productoDB.idProducto
+                        }
+                    }
+                ) as AddStockQueryResult;
+                /**
+                 * Respuesta del servidor
+                 */
+                const newStock = result[0][0].nuevo_stock;
+                return res.status(201).json({
+                    error: false,
+                    message: `El nuevo stock del producto es: ${newStock}`,
+                    data: { newStock },
+                });
+            } else {
+                return res.status(400).json({
                     error: true,
-                    message: 'El ID del ingreso a modificar, no existe en DB.',
-                    data: {},
+                    message: 'El ID de Ingreso no es válido.',
+                    data: { idIngresoStock }
                 });
             }
-            /**
-             * Ejecucion del Procedimiento Almacenado
-             */
-            const result: any = await sequelize.query(
-                'EXEC sp_Editar_Ingreso_Stock_Producto :idIngresoStock, :cantidad, :precio_compra, :precio_venta;',
-                {
-                    replacements: {
-                        idIngresoStock,
-                        cantidad,
-                        precio_compra,
-                        precio_venta
-                    }
-                }
-            );
-            /**
-             * Respuesta del servidor
-             */
-            const newStock = result[0][0].nuevo_stock
-            console.log(newStock)
-            return res.status(201).json({
-                error: false,
-                message: `El nuevo stock del producto es: ${newStock}`,
-                data: { newStock },
-            });
-        } catch (error: any) {
-            /**
-             * Manejo de Errores generales de la BD.
-             */
-            console.log(error)
-            return res.status(500).json({
-                error: true,
-                message: 'Hay problemas al procesar la solicitud.',
-                data: {
-                    error
-                }
-            });
+        } catch (error) {
+            return handleDatabaseError(error, res);
         }
     }
 
     /**
-     * Este Endpoint sirve para modificar un erroneo de Stock en DB.
+     * Este Endpoint sirve para modificar el Status de un producto en DB.
      */
     public async modifyStatusProduct(req: Request, res: Response) {
         const ip = req.socket.remoteAddress;
         console.info(ip);
-        //Validacion de Data ingresada por los usuarios
         const {
             idProducto,
             isActive
-        } = req.body;
+        }: ModifyStatusProduct = req.body || {};
+        //Validacion de Data ingresada por los usuarios
         const { error } = productStatusSchema.validate(req.body);
         if (error) {
             return res.status(400).json({
@@ -582,10 +528,10 @@ class ProductsController {
             });
         }
         // Validacion si idProducto no es un número o es <= 0
-        if (typeof idProducto === 'number' && !isNaN(idProducto) && idProducto > 0) {
+        if (isValidNumber(idProducto)) {
             try {
                 // Búsqueda de la existencia del producto a modificar
-                let productoDB: any = await Producto.findOne({
+                let productoDB: Awaited<Producto> | null = await Producto.findOne({
                     where: {
                         idProducto: idProducto
                     },
@@ -598,43 +544,31 @@ class ProductsController {
                     });
                 }
 
-                // OBJETO DE DATOS MSSQLs
-                const replacements: any = {
-                    idProducto,
-                    codigo: null,
-                    nombre: null,
-                    descripcion: null,
-                    imagen: null,
-                    isActive: isActive,
-                    categoria_idCategoria: null,
-                    marca_idMarca: null
-                };
                 /**
                  * Ejecucion del Procedimiento Almacenado
                  */
                 await sequelize.query(
                     'EXEC sp_Editar_Producto :idProducto, :codigo, :nombre, :descripcion, :imagen, :isActive, :categoria_idCategoria, :marca_idMarca;',
                     {
-                        replacements: replacements
+                        replacements: {
+                            idProducto,
+                            codigo: null,
+                            nombre: null,
+                            descripcion: null,
+                            imagen: null,
+                            isActive: isActive,
+                            categoria_idCategoria: null,
+                            marca_idMarca: null
+                        }
                     }
                 );
-
                 return res.status(201).json({
                     error: false,
                     message: 'Data de Producto modificada exitosamente.',
                     data: {},
                 });
-            } catch (error: any) {
-                /**
-                 * Manejo de Errores generales de la BD.
-                 */
-                return res.status(500).json({
-                    error: true,
-                    message: 'Hay problemas al procesar la solicitud.',
-                    data: {
-                        error
-                    }
-                });
+            } catch (error) {
+                return handleDatabaseError(error, res);
             }
         } else {
             return res.status(404).json({

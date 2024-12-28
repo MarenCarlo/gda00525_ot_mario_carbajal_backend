@@ -13,7 +13,7 @@ Rol.init({
         primaryKey: true,
         autoIncrement: true,
     },
-    rol: {
+    nombre: {
         type: DataTypes.STRING(32),
         allowNull: false,
         unique: true,
