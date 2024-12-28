@@ -20,6 +20,8 @@ const multerConfig_1 = require("../shared/multerConfig");
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const tb_ingresos_productos_stock_1 = __importDefault(require("../models/tb_ingresos_productos_stock"));
+const inputTypesValidations_1 = require("../shared/inputTypesValidations");
+const handleDatabaseError_1 = require("../shared/handleDatabaseError");
 class ProductsController {
     /**
     * Este Endpoint sirve para obtener productos o uno solo
@@ -30,21 +32,22 @@ class ProductsController {
             const ip = req.socket.remoteAddress;
             console.info(ip);
             const { idProducto } = req.params;
+            let idProductoParsed = Number(idProducto);
             try {
                 let query = 'SELECT * FROM vw_Productos_Publico';
-                let replacements = [];
                 if (idProducto) {
-                    if (typeof idProducto === 'number' && !isNaN(idProducto) && idProducto > 0) {
+                    if ((0, inputTypesValidations_1.isValidNumber)(idProductoParsed)) {
+                        query += ` WHERE idProducto = ${Number(idProducto)}`;
+                    }
+                    else {
                         return res.status(400).json({
                             error: true,
                             message: 'El ID de producto no es válido.',
                             data: {}
                         });
                     }
-                    query += ` WHERE idProducto = ${Number(idProducto)}`;
                 }
                 const productos = yield connection_1.default.query(query, {
-                    replacements,
                     type: 'SELECT'
                 });
                 if (!productos) {
@@ -61,13 +64,7 @@ class ProductsController {
                 });
             }
             catch (error) {
-                return res.status(500).json({
-                    error: true,
-                    message: 'Hubo un error al obtener los productos.',
-                    data: {
-                        error
-                    }
-                });
+                return (0, handleDatabaseError_1.handleDatabaseError)(error, res);
             }
         });
     }
@@ -80,21 +77,22 @@ class ProductsController {
             const ip = req.socket.remoteAddress;
             console.info(ip);
             const { idProducto } = req.params;
+            let idProductoParsed = Number(idProducto);
             try {
                 let query = 'SELECT * FROM vw_Productos_Internos';
-                let replacements = [];
                 if (idProducto) {
-                    if (typeof idProducto === 'number' && !isNaN(idProducto) && idProducto > 0) {
+                    if ((0, inputTypesValidations_1.isValidNumber)(idProductoParsed)) {
+                        query += ` WHERE idProducto = ${Number(idProducto)}`;
+                    }
+                    else {
                         return res.status(400).json({
                             error: true,
                             message: 'El ID de producto no es válido.',
                             data: {}
                         });
                     }
-                    query += ` WHERE idProducto = ${Number(idProducto)}`;
                 }
                 const productos = yield connection_1.default.query(query, {
-                    replacements,
                     type: 'SELECT'
                 });
                 if (!productos) {
@@ -111,13 +109,7 @@ class ProductsController {
                 });
             }
             catch (error) {
-                return res.status(500).json({
-                    error: true,
-                    message: 'Hubo un error al obtener los productos.',
-                    data: {
-                        error
-                    }
-                });
+                return (0, handleDatabaseError_1.handleDatabaseError)(error, res);
             }
         });
     }
@@ -132,9 +124,11 @@ class ProductsController {
              * Funcion para manejo de subida de imagenes a Servidor.
              */
             multerConfig_1.upload.single('image')(req, res, (err) => __awaiter(this, void 0, void 0, function* () {
+                const { jsonData } = req.body || {};
+                const file = req.file;
+                let productData;
+                productData = JSON.parse(jsonData);
                 // Validación de datos del usuario con Joi
-                const { jsonData } = req.body;
-                let productData = JSON.parse(jsonData);
                 const { error } = productController_joi_1.productSchema.validate(productData);
                 if (error) {
                     if (req.file) {
@@ -151,8 +145,8 @@ class ProductsController {
                  * Manejo de Errores en subida de imagenes
                  */
                 if (err) {
-                    if (req.file) {
-                        fs_1.default.unlinkSync(req.file.path);
+                    if (file) {
+                        fs_1.default.unlinkSync(file.path);
                     }
                     return res.status(400).json({
                         error: true,
@@ -160,7 +154,7 @@ class ProductsController {
                         data: {}
                     });
                 }
-                if (!req.file) {
+                if (!file) {
                     return res.status(400).json({
                         error: true,
                         message: 'La imagen es obligatoria.',
@@ -169,22 +163,20 @@ class ProductsController {
                 }
                 try {
                     // Obtener la ruta de la imagen subida desde req.file
-                    const imageUrl = req.file ? `/images/products/${req.file.filename}` : '';
-                    // OBJETO DE DATOS MSSQL
-                    const replacements = {
-                        codigo,
-                        nombre,
-                        descripcion,
-                        imagen: imageUrl,
-                        isActive: false,
-                        categoria_idCategoria,
-                        marca_idMarca
-                    };
+                    const imageUrl = file ? `/images/products/${file.filename}` : '';
                     /**
                      * Ejecucion del Procedimiento Almacenado
                      */
                     const result = yield connection_1.default.query('EXEC sp_Crear_Producto :codigo, :nombre, :descripcion, :imagen, :isActive, :categoria_idCategoria, :marca_idMarca;', {
-                        replacements: replacements
+                        replacements: {
+                            codigo,
+                            nombre,
+                            descripcion,
+                            imagen: imageUrl,
+                            isActive: false,
+                            categoria_idCategoria,
+                            marca_idMarca
+                        }
                     });
                     /**
                      * Respuesta del servidor
@@ -197,34 +189,10 @@ class ProductsController {
                     });
                 }
                 catch (error) {
-                    if (req.file) {
-                        fs_1.default.unlinkSync(req.file.path);
+                    if (file) {
+                        fs_1.default.unlinkSync(file.path);
                     }
-                    /**
-                     * Condiciones de Datos Duplicados en restricciones de
-                     * UNIQUE
-                     */
-                    if (error.name === 'SequelizeUniqueConstraintError') {
-                        const uniqueError = error.errors[0];
-                        const conflictingValue = uniqueError === null || uniqueError === void 0 ? void 0 : uniqueError.value;
-                        if (uniqueError === null || uniqueError === void 0 ? void 0 : uniqueError.message.includes('must be unique')) {
-                            return res.status(409).json({
-                                error: true,
-                                message: `${conflictingValue} ya existe en la Base de Datos.`,
-                                data: {}
-                            });
-                        }
-                    }
-                    /**
-                     * Manejo de Errores generales de la BD.
-                     */
-                    return res.status(500).json({
-                        error: true,
-                        message: 'Hay problemas al procesar la solicitud.',
-                        data: {
-                            error
-                        }
-                    });
+                    return (0, handleDatabaseError_1.handleDatabaseError)(error, res);
                 }
             }));
         });
@@ -240,13 +208,15 @@ class ProductsController {
              * Funcion para manejo de subida de imagenes a Servidor.
              */
             multerConfig_1.upload.single('image')(req, res, (err) => __awaiter(this, void 0, void 0, function* () {
+                const { jsonData } = req.body || {};
+                const file = req.file;
+                let productData;
+                productData = JSON.parse(jsonData);
                 // Validación de datos del usuario con Joi
-                const { jsonData } = req.body;
-                let productData = JSON.parse(jsonData);
                 const { error } = productController_joi_1.productOptionalSchema.validate(productData);
                 if (error) {
-                    if (req.file) {
-                        fs_1.default.unlinkSync(req.file.path);
+                    if (file) {
+                        fs_1.default.unlinkSync(file.path);
                     }
                     return res.status(400).json({
                         error: true,
@@ -259,8 +229,8 @@ class ProductsController {
                  * Manejo de Errores en subida de imagenes
                  */
                 if (err) {
-                    if (req.file) {
-                        fs_1.default.unlinkSync(req.file.path);
+                    if (file) {
+                        fs_1.default.unlinkSync(file.path);
                     }
                     return res.status(400).json({
                         error: true,
@@ -268,8 +238,7 @@ class ProductsController {
                         data: {}
                     });
                 }
-                // Validacion si idProducto no es un número o es <= 0
-                if (typeof idProducto === 'number' && !isNaN(idProducto) && idProducto > 0) {
+                if ((0, inputTypesValidations_1.isValidNumber)(idProducto)) {
                     try {
                         // Búsqueda de la existencia del producto a modificar
                         let productoDB = yield tb_productos_1.default.findOne({
@@ -290,9 +259,9 @@ class ProductsController {
                          */
                         // Obtener la ruta de la imagen subida desde req.file
                         let imageUrl = null;
-                        if (req.file) {
+                        if (file) {
                             // Se crea nueva ruta de imagen y nombre de archivo con extensión.
-                            imageUrl = `/images/products/${req.file.filename}`;
+                            imageUrl = `/images/products/${file.filename}`;
                             // Se Obtiene el nombre de la imagen de producto antigua
                             const filePath = productoDB.imagen.split('/products/')[1];
                             // Obtener la ruta completa del servidor de la imagen antigua
@@ -331,34 +300,10 @@ class ProductsController {
                         });
                     }
                     catch (error) {
-                        if (req.file) {
-                            fs_1.default.unlinkSync(req.file.path);
+                        if (file) {
+                            fs_1.default.unlinkSync(file.path);
                         }
-                        /**
-                         * Condiciones de Datos Duplicados en restricciones de
-                         * UNIQUE
-                         */
-                        if (error.name === 'SequelizeUniqueConstraintError') {
-                            const uniqueError = error.errors[0];
-                            const conflictingValue = uniqueError === null || uniqueError === void 0 ? void 0 : uniqueError.value;
-                            if (uniqueError === null || uniqueError === void 0 ? void 0 : uniqueError.message.includes('must be unique')) {
-                                return res.status(409).json({
-                                    error: true,
-                                    message: `${conflictingValue} ya existe en la Base de Datos.`,
-                                    data: {}
-                                });
-                            }
-                        }
-                        /**
-                         * Manejo de Errores generales de la BD.
-                         */
-                        return res.status(500).json({
-                            error: true,
-                            message: 'Hay problemas al procesar la solicitud.',
-                            data: {
-                                error
-                            }
-                        });
+                        return (0, handleDatabaseError_1.handleDatabaseError)(error, res);
                     }
                 }
                 else {
@@ -380,10 +325,16 @@ class ProductsController {
             console.info(ip);
             try {
                 let query = 'SELECT * FROM vw_Ingresos_Stock ORDER BY fecha_creacion DESC;';
-                const productos = yield connection_1.default.query(query, {
-                    type: 'SELECT'
-                });
-                if (!productos) {
+                const [rawResult] = yield connection_1.default.query(query);
+                if (!Array.isArray(rawResult)) {
+                    return res.status(500).json({
+                        error: true,
+                        message: 'El resultado de la consulta no es válido.',
+                        data: {}
+                    });
+                }
+                const ingresosDB = rawResult;
+                if (ingresosDB.length === 0) {
                     return res.status(404).json({
                         error: true,
                         message: 'No se encontraron ingresos.',
@@ -393,17 +344,11 @@ class ProductsController {
                 return res.status(200).json({
                     error: false,
                     message: 'Ingresos obtenidos exitosamente.',
-                    data: productos
+                    data: ingresosDB
                 });
             }
             catch (error) {
-                return res.status(500).json({
-                    error: true,
-                    message: 'Hubo un error al obtener los ingresos.',
-                    data: {
-                        error
-                    }
-                });
+                return (0, handleDatabaseError_1.handleDatabaseError)(error, res);
             }
         });
     }
@@ -414,8 +359,8 @@ class ProductsController {
         return __awaiter(this, void 0, void 0, function* () {
             const ip = req.socket.remoteAddress;
             console.info(ip);
+            const { cantidad, precio_compra, precio_venta, producto_idProducto } = req.body || {};
             //Validacion de Data ingresada por los usuarios
-            const { cantidad, precio_compra, precio_venta, producto_idProducto } = req.body;
             const { error } = productController_joi_1.ingressSchema.validate(req.body);
             if (error) {
                 return res.status(400).json({
@@ -425,7 +370,6 @@ class ProductsController {
                 });
             }
             try {
-                // Búsqueda de la existencia del producto a modificar
                 let productoDB = yield tb_productos_1.default.findOne({
                     where: {
                         idProducto: producto_idProducto
@@ -453,7 +397,6 @@ class ProductsController {
                  * Respuesta del servidor
                  */
                 const newStock = result[0][0].nuevo_stock;
-                console.log(newStock);
                 return res.status(201).json({
                     error: false,
                     message: `El nuevo stock del producto es: ${newStock}`,
@@ -461,17 +404,7 @@ class ProductsController {
                 });
             }
             catch (error) {
-                /**
-                 * Manejo de Errores generales de la BD.
-                 */
-                console.log(error);
-                return res.status(500).json({
-                    error: true,
-                    message: 'Hay problemas al procesar la solicitud.',
-                    data: {
-                        error
-                    }
-                });
+                return (0, handleDatabaseError_1.handleDatabaseError)(error, res);
             }
         });
     }
@@ -482,8 +415,8 @@ class ProductsController {
         return __awaiter(this, void 0, void 0, function* () {
             const ip = req.socket.remoteAddress;
             console.info(ip);
+            const { idIngresoStock, cantidad = null, precio_compra = null, precio_venta = null } = req.body || {};
             //Validacion de Data ingresada por los usuarios
-            const { idIngresoStock, cantidad = null, precio_compra = null, precio_venta = null } = req.body;
             const { error } = productController_joi_1.ingressOptionalSchema.validate(req.body);
             if (error) {
                 return res.status(400).json({
@@ -493,65 +426,83 @@ class ProductsController {
                 });
             }
             try {
-                // Búsqueda de la existencia del producto a modificar
-                let ingresoStockDB = yield tb_ingresos_productos_stock_1.default.findOne({
-                    where: {
-                        idIngresoStock: idIngresoStock
-                    },
-                });
-                if (!ingresoStockDB) {
-                    return res.status(404).json({
-                        error: true,
-                        message: 'El ID del ingreso a modificar, no existe en DB.',
-                        data: {},
+                if ((0, inputTypesValidations_1.isValidNumber)(idIngresoStock)) {
+                    if (cantidad !== null && !(0, inputTypesValidations_1.isValidNumber)(cantidad)) {
+                        return res.status(400).json({
+                            error: true,
+                            message: 'La nueva cantidad de Ingreso no es válida.',
+                            data: { cantidad }
+                        });
+                    }
+                    // Búsqueda del ingreso del producto a modificar
+                    let ingresoStockDB = yield tb_ingresos_productos_stock_1.default.findOne({
+                        where: {
+                            idIngresoStock: idIngresoStock
+                        },
+                    });
+                    if (!ingresoStockDB) {
+                        return res.status(404).json({
+                            error: true,
+                            message: 'El ID del ingreso a modificar, no existe en DB.',
+                            data: {},
+                        });
+                    }
+                    let productoDB = yield tb_productos_1.default.findOne({
+                        where: {
+                            idProducto: ingresoStockDB.producto_idProducto
+                        },
+                    });
+                    if (!productoDB) {
+                        return res.status(404).json({
+                            error: true,
+                            message: 'El ID del producto a modificar, no existe en DB.',
+                            data: {},
+                        });
+                    }
+                    /**
+                     * Ejecucion del Procedimiento Almacenado
+                     */
+                    const result = yield connection_1.default.query('EXEC sp_Editar_Ingreso_Stock_Producto :idIngresoStock, :cantidad, :precio_compra, :precio_venta, :producto_idProducto;', {
+                        replacements: {
+                            idIngresoStock,
+                            cantidad,
+                            precio_compra,
+                            precio_venta,
+                            producto_idProducto: productoDB.idProducto
+                        }
+                    });
+                    /**
+                     * Respuesta del servidor
+                     */
+                    const newStock = result[0][0].nuevo_stock;
+                    return res.status(201).json({
+                        error: false,
+                        message: `El nuevo stock del producto es: ${newStock}`,
+                        data: { newStock },
                     });
                 }
-                /**
-                 * Ejecucion del Procedimiento Almacenado
-                 */
-                const result = yield connection_1.default.query('EXEC sp_Editar_Ingreso_Stock_Producto :idIngresoStock, :cantidad, :precio_compra, :precio_venta;', {
-                    replacements: {
-                        idIngresoStock,
-                        cantidad,
-                        precio_compra,
-                        precio_venta
-                    }
-                });
-                /**
-                 * Respuesta del servidor
-                 */
-                const newStock = result[0][0].nuevo_stock;
-                console.log(newStock);
-                return res.status(201).json({
-                    error: false,
-                    message: `El nuevo stock del producto es: ${newStock}`,
-                    data: { newStock },
-                });
+                else {
+                    return res.status(400).json({
+                        error: true,
+                        message: 'El ID de Ingreso no es válido.',
+                        data: { idIngresoStock }
+                    });
+                }
             }
             catch (error) {
-                /**
-                 * Manejo de Errores generales de la BD.
-                 */
-                console.log(error);
-                return res.status(500).json({
-                    error: true,
-                    message: 'Hay problemas al procesar la solicitud.',
-                    data: {
-                        error
-                    }
-                });
+                return (0, handleDatabaseError_1.handleDatabaseError)(error, res);
             }
         });
     }
     /**
-     * Este Endpoint sirve para modificar un erroneo de Stock en DB.
+     * Este Endpoint sirve para modificar el Status de un producto en DB.
      */
     modifyStatusProduct(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const ip = req.socket.remoteAddress;
             console.info(ip);
+            const { idProducto, isActive } = req.body || {};
             //Validacion de Data ingresada por los usuarios
-            const { idProducto, isActive } = req.body;
             const { error } = productController_joi_1.productStatusSchema.validate(req.body);
             if (error) {
                 return res.status(400).json({
@@ -561,7 +512,7 @@ class ProductsController {
                 });
             }
             // Validacion si idProducto no es un número o es <= 0
-            if (typeof idProducto === 'number' && !isNaN(idProducto) && idProducto > 0) {
+            if ((0, inputTypesValidations_1.isValidNumber)(idProducto)) {
                 try {
                     // Búsqueda de la existencia del producto a modificar
                     let productoDB = yield tb_productos_1.default.findOne({
@@ -576,22 +527,20 @@ class ProductsController {
                             data: {},
                         });
                     }
-                    // OBJETO DE DATOS MSSQLs
-                    const replacements = {
-                        idProducto,
-                        codigo: null,
-                        nombre: null,
-                        descripcion: null,
-                        imagen: null,
-                        isActive: isActive,
-                        categoria_idCategoria: null,
-                        marca_idMarca: null
-                    };
                     /**
                      * Ejecucion del Procedimiento Almacenado
                      */
                     yield connection_1.default.query('EXEC sp_Editar_Producto :idProducto, :codigo, :nombre, :descripcion, :imagen, :isActive, :categoria_idCategoria, :marca_idMarca;', {
-                        replacements: replacements
+                        replacements: {
+                            idProducto,
+                            codigo: null,
+                            nombre: null,
+                            descripcion: null,
+                            imagen: null,
+                            isActive: isActive,
+                            categoria_idCategoria: null,
+                            marca_idMarca: null
+                        }
                     });
                     return res.status(201).json({
                         error: false,
@@ -600,16 +549,7 @@ class ProductsController {
                     });
                 }
                 catch (error) {
-                    /**
-                     * Manejo de Errores generales de la BD.
-                     */
-                    return res.status(500).json({
-                        error: true,
-                        message: 'Hay problemas al procesar la solicitud.',
-                        data: {
-                            error
-                        }
-                    });
+                    return (0, handleDatabaseError_1.handleDatabaseError)(error, res);
                 }
             }
             else {

@@ -2,6 +2,11 @@ import { Request, Response } from 'express';
 import { categoryOptionalSchema, categorySchema } from '../shared/joiDataValidations/categoryController_joi';
 import sequelize from '../database/connection';
 import CategoriaProducto from '../models/tb_categorias_productos';
+import { handleDatabaseError } from '../shared/handleDatabaseError';
+import { isValidNumber } from '../shared/inputTypesValidations';
+import { formatText } from '../shared/formatText';
+import { StoredProcedureResult } from '../models/types/promiseResultsInterfaces';
+import { addCategoriesBody, modifyCategoriesBody } from '../models/types/categoriesInterfaces';
 
 class CategoriesController {
 
@@ -12,7 +17,7 @@ class CategoriesController {
         const ip = req.socket.remoteAddress;
         console.info(ip);
         try {
-            const categories = await CategoriaProducto.findAll({
+            const categories: Awaited<ReturnType<typeof CategoriaProducto.findAll>> | null = await CategoriaProducto.findAll({
                 attributes: ['idCategoriaProducto', 'nombre', 'descripcion', 'fecha_creacion'],
             });
             if (categories.length === 0) {
@@ -28,12 +33,7 @@ class CategoriesController {
                 data: categories
             });
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({
-                error: true,
-                message: 'Hubo un problema al obtener las Categorias.',
-                data: { error }
-            });
+            return handleDatabaseError(error, res);
         }
     }
 
@@ -46,15 +46,8 @@ class CategoriesController {
         const {
             nombre,
             descripcion
-        } = req.body;
-        let nombreFormatted;
-        if (nombre !== null && nombre !== undefined) {
-            nombreFormatted = nombre
-                .toLowerCase()
-                .split(' ')
-                .map((palabra: string) => palabra.charAt(0).toUpperCase() + palabra.slice(1))
-                .join(' ');
-        }
+        }: addCategoriesBody = req.body || {};
+        let nombreFormatted = formatText(nombre);
         const { error } = categorySchema.validate(req.body);
         if (error) {
             return res.status(400).json({
@@ -67,7 +60,7 @@ class CategoriesController {
             /**
              * Ejecucion del Procedimiento Almacenado
              */
-            const result: any = await sequelize.query(
+            const result = await sequelize.query(
                 'EXEC sp_Crear_Categoria_Producto :nombre, :descripcion;',
                 {
                     replacements: {
@@ -75,7 +68,7 @@ class CategoriesController {
                         descripcion
                     }
                 }
-            );
+            ) as StoredProcedureResult;
             /**
              * Respuesta del servidor
              */
@@ -85,32 +78,8 @@ class CategoriesController {
                 message: 'Categoria agregada exitosamente.',
                 data: { nuevoID },
             });
-        } catch (error: any) {
-            /**
-             * Condiciones de Datos Duplicados en restricciones de
-             * UNIQUE
-             */
-            if (error.name === 'SequelizeUniqueConstraintError') {
-                const uniqueError = error.errors[0];
-                const conflictingValue = uniqueError?.value
-                if (uniqueError?.message.includes('must be unique')) {
-                    return res.status(409).json({
-                        error: true,
-                        message: `${conflictingValue} ya existe en BD.`,
-                        data: {}
-                    });
-                }
-            }
-            /**
-             * Manejo de Errores generales de la BD.
-             */
-            return res.status(500).json({
-                error: true,
-                message: 'Hay problemas al procesar la solicitud.',
-                data: {
-                    error
-                }
-            });
+        } catch (error) {
+            return handleDatabaseError(error, res);
         }
     }
 
@@ -124,18 +93,12 @@ class CategoriesController {
             idCategoriaProducto,
             nombre = null,
             descripcion = null
-        } = req.body;
-        let nombreFormatted = null;
-        if (nombre !== null && nombre !== undefined) {
-            nombreFormatted = nombre
-                .toLowerCase()
-                .split(' ')
-                .map((palabra: string) => palabra.charAt(0).toUpperCase() + palabra.slice(1))
-                .join(' ');
+        }: modifyCategoriesBody = req.body || {};
+        let nombreFormatted: string | null = nombre;
+        if (nombreFormatted !== null) {
+            nombreFormatted = formatText(nombre!);
         }
-        // Validacion si idCategoriaProducto no es un número o es <= 0
-        if (typeof idCategoriaProducto === 'number' && !isNaN(idCategoriaProducto) && idCategoriaProducto > 0) {
-            //Validacion de Data ingresada por los usuarios
+        if (isValidNumber(idCategoriaProducto)) {
             const { error } = categoryOptionalSchema.validate(req.body);
             if (error) {
                 return res.status(400).json({
@@ -145,8 +108,8 @@ class CategoriesController {
                 });
             }
             try {
-                // Búsqueda de la existencia de la Empresa
-                let categoriaProductoDB = await CategoriaProducto.findOne({
+                // Búsqueda de la existencia de la Categoría
+                let categoriaProductoDB: Awaited<ReturnType<typeof CategoriaProducto.findOne>> | null = await CategoriaProducto.findOne({
                     where: {
                         idCategoriaProducto: idCategoriaProducto
                     },
@@ -158,17 +121,15 @@ class CategoriesController {
                         data: {}
                     });
                 }
-                // OBJETO DE DATOS MSSQL
-                const replacements: any = {
-                    idCategoriaProducto,
-                    nombre: nombreFormatted,
-                    descripcion
-                };
                 // Ejecucion el procedimiento almacenado
                 await sequelize.query(
                     'EXEC sp_Editar_Categoria_Producto :idCategoriaProducto, :nombre, :descripcion;',
                     {
-                        replacements: replacements
+                        replacements: {
+                            idCategoriaProducto,
+                            nombre: nombreFormatted,
+                            descripcion
+                        }
                     }
                 );
                 /**
@@ -179,32 +140,8 @@ class CategoriesController {
                     message: 'Data de Categoría modificada exitosamente.',
                     data: {},
                 });
-            } catch (error: any) {
-                /**
-                 * Condiciones de Datos Duplicados en restricciones de
-                 * UNIQUE
-                 */
-                if (error.name === 'SequelizeUniqueConstraintError') {
-                    const uniqueError = error.errors[0];
-                    const conflictingValue = uniqueError?.value
-                    if (uniqueError?.message.includes('must be unique')) {
-                        return res.status(409).json({
-                            error: true,
-                            message: `${conflictingValue} ya existe en DB.`,
-                            data: {}
-                        });
-                    }
-                }
-                /**
-                 * Manejo de Errores generales de la BD.
-                 */
-                return res.status(500).json({
-                    error: true,
-                    message: 'Hay problemas al procesar la solicitud.',
-                    data: {
-                        error
-                    }
-                });
+            } catch (error) {
+                return handleDatabaseError(error, res);
             }
         } else {
             return res.status(404).json({

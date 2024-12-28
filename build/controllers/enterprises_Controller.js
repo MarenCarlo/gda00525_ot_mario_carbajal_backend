@@ -16,6 +16,8 @@ exports.enterprisesController = void 0;
 const enterpriseController_joi_1 = require("../shared/joiDataValidations/enterpriseController_joi");
 const connection_1 = __importDefault(require("../database/connection"));
 const tb_empresas_1 = __importDefault(require("../models/tb_empresas"));
+const inputTypesValidations_1 = require("../shared/inputTypesValidations");
+const handleDatabaseError_1 = require("../shared/handleDatabaseError");
 class EnterprisesController {
     /**
     * Este Endpoint sirve para obtener empresas o una sola
@@ -25,34 +27,37 @@ class EnterprisesController {
             const ip = req.socket.remoteAddress;
             console.info(ip);
             const { idEmpresa } = req.params;
+            let idEmpresaParsed = Number(idEmpresa);
             try {
-                if (idEmpresa) {
-                    if (typeof idEmpresa === 'number' && !isNaN(idEmpresa) && idEmpresa > 0) {
+                if (idEmpresaParsed) {
+                    if ((0, inputTypesValidations_1.isValidNumber)(idEmpresaParsed)) {
+                        const empresaDB = yield tb_empresas_1.default.findOne({
+                            where: { idEmpresa: idEmpresaParsed }
+                        });
+                        if (!empresaDB) {
+                            return res.status(404).json({
+                                error: true,
+                                message: 'La empresa no existe en DB.',
+                                data: {}
+                            });
+                        }
+                        return res.status(200).json({
+                            error: false,
+                            message: 'Empresa obtenida exitosamente.',
+                            data: empresaDB
+                        });
+                    }
+                    else {
                         return res.status(400).json({
                             error: true,
                             message: 'El ID de empresa no es válido.',
-                            data: {}
+                            data: { idEmpresaParsed }
                         });
                     }
-                    const empresa = yield tb_empresas_1.default.findOne({
-                        where: { idEmpresa: Number(idEmpresa) }
-                    });
-                    if (!empresa) {
-                        return res.status(404).json({
-                            error: true,
-                            message: 'La empresa no existe en DB.',
-                            data: {}
-                        });
-                    }
-                    return res.status(200).json({
-                        error: false,
-                        message: 'Empresa obtenida exitosamente.',
-                        data: empresa
-                    });
                 }
                 else {
-                    const empresas = yield tb_empresas_1.default.findAll();
-                    if (!empresas || empresas.length === 0) {
+                    const empresasDB = yield tb_empresas_1.default.findAll();
+                    if (!empresasDB || empresasDB.length === 0) {
                         return res.status(404).json({
                             error: true,
                             message: 'No se encontraron empresas.',
@@ -62,18 +67,12 @@ class EnterprisesController {
                     return res.status(200).json({
                         error: false,
                         message: 'Empresas obtenidas exitosamente.',
-                        data: empresas
+                        data: empresasDB
                     });
                 }
             }
             catch (error) {
-                return res.status(500).json({
-                    error: true,
-                    message: 'Hubo un error al obtener las empresas.',
-                    data: {
-                        error
-                    }
-                });
+                return (0, handleDatabaseError_1.handleDatabaseError)(error, res);
             }
         });
     }
@@ -84,7 +83,7 @@ class EnterprisesController {
         return __awaiter(this, void 0, void 0, function* () {
             const ip = req.socket.remoteAddress;
             console.info(ip);
-            const { razon_social, nombre_comercial, nit, telefono, email } = req.body;
+            const { razon_social, nombre_comercial, nit, telefono, email } = req.body || {};
             const { error } = enterpriseController_joi_1.enterpriseSchema.validate(req.body);
             if (error) {
                 return res.status(400).json({
@@ -117,31 +116,7 @@ class EnterprisesController {
                 });
             }
             catch (error) {
-                /**
-                 * Condiciones de Datos Duplicados en restricciones de
-                 * UNIQUE
-                 */
-                if (error.name === 'SequelizeUniqueConstraintError') {
-                    const uniqueError = error.errors[0];
-                    const conflictingValue = uniqueError === null || uniqueError === void 0 ? void 0 : uniqueError.value;
-                    if (uniqueError === null || uniqueError === void 0 ? void 0 : uniqueError.message.includes('must be unique')) {
-                        return res.status(409).json({
-                            error: true,
-                            message: `${conflictingValue} ya existe en BD.`,
-                            data: {}
-                        });
-                    }
-                }
-                /**
-                 * Manejo de Errores generales de la BD.
-                 */
-                return res.status(500).json({
-                    error: true,
-                    message: 'Hay problemas al procesar la solicitud.',
-                    data: {
-                        error
-                    }
-                });
+                return (0, handleDatabaseError_1.handleDatabaseError)(error, res);
             }
         });
     }
@@ -152,9 +127,8 @@ class EnterprisesController {
         return __awaiter(this, void 0, void 0, function* () {
             const ip = req.socket.remoteAddress;
             console.info(ip);
-            const { idEmpresa, razon_social = null, nombre_comercial = null, nit = null, telefono = null, email = null } = req.body;
-            // Validacion si idEmpresa no es un número o es <= 0
-            if (typeof idEmpresa === 'number' && !isNaN(idEmpresa) && idEmpresa > 0) {
+            const { idEmpresa, razon_social = null, nombre_comercial = null, nit = null, telefono = null, email = null } = req.body || {};
+            if ((0, inputTypesValidations_1.isValidNumber)(idEmpresa)) {
                 //Validacion de Data ingresada por los usuarios
                 const { error } = enterpriseController_joi_1.enterpriseOptionalSchema.validate(req.body);
                 if (error) {
@@ -178,18 +152,16 @@ class EnterprisesController {
                             data: {}
                         });
                     }
-                    // OBJETO DE DATOS MSSQL
-                    const replacements = {
-                        idEmpresa,
-                        razon_social,
-                        nombre_comercial,
-                        nit,
-                        telefono,
-                        email
-                    };
                     // Ejecucion el procedimiento almacenado
                     yield connection_1.default.query('EXEC sp_Editar_Empresa :idEmpresa, :razon_social, :nombre_comercial, :nit, :telefono, :email', {
-                        replacements: replacements
+                        replacements: {
+                            idEmpresa,
+                            razon_social,
+                            nombre_comercial,
+                            nit,
+                            telefono,
+                            email
+                        }
                     });
                     /**
                      * Respuesta del Servidor
@@ -201,31 +173,7 @@ class EnterprisesController {
                     });
                 }
                 catch (error) {
-                    /**
-                     * Condiciones de Datos Duplicados en restricciones de
-                     * UNIQUE
-                     */
-                    if (error.name === 'SequelizeUniqueConstraintError') {
-                        const uniqueError = error.errors[0];
-                        const conflictingValue = uniqueError === null || uniqueError === void 0 ? void 0 : uniqueError.value;
-                        if (uniqueError === null || uniqueError === void 0 ? void 0 : uniqueError.message.includes('must be unique')) {
-                            return res.status(409).json({
-                                error: true,
-                                message: `${conflictingValue} ya existe en DB.`,
-                                data: {}
-                            });
-                        }
-                    }
-                    /**
-                     * Manejo de Errores generales de la BD.
-                     */
-                    return res.status(500).json({
-                        error: true,
-                        message: 'Hay problemas al procesar la solicitud.',
-                        data: {
-                            error
-                        }
-                    });
+                    return (0, handleDatabaseError_1.handleDatabaseError)(error, res);
                 }
             }
             else {

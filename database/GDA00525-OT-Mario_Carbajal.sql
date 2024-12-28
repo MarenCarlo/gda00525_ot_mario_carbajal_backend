@@ -21,7 +21,7 @@ GO
 -- TABLA: Roles
 CREATE TABLE tb_Roles (
 	idRol INT IDENTITY(1,1) PRIMARY KEY,
-	rol NVARCHAR(32) UNIQUE NOT NULL,
+	nombre NVARCHAR(32) UNIQUE NOT NULL,
 	descripcion NVARCHAR(128) NULL
 );
 GO
@@ -124,6 +124,7 @@ GO
 CREATE TABLE tb_Detalles_Orden (
 	idDetalleOrden INT IDENTITY(1,1) PRIMARY KEY,
 	cantidad INT NOT NULL,
+	precio_venta DECIMAL(9,2) NOT NULL,
 	subtotal DECIMAL(9,2) NOT NULL,
 	producto_idProducto INT NOT NULL,
 	orden_idOrden INT NOT NULL,
@@ -139,27 +140,27 @@ GO
 /** PROCEDIMIENTOS TABLA ROLES **/
 -- Procedimiento: Crear Rol
 CREATE PROCEDURE sp_Crear_Rol
-    @rol NVARCHAR(32),
+    @nombre NVARCHAR(32),
     @descripcion NVARCHAR(128) = NULL
 AS
 BEGIN
 	SET NOCOUNT ON;
-    INSERT INTO tb_Roles (rol, descripcion)
-    VALUES (@rol, @descripcion);
+    INSERT INTO tb_Roles (nombre, descripcion)
+    VALUES (@nombre, @descripcion);
 	SELECT SCOPE_IDENTITY() AS NuevoID;
 END;
 GO
 -- Procedimiento: Editar Rol
 CREATE PROCEDURE sp_Editar_Rol
     @idRol INT,
-    @rol NVARCHAR(32) = NULL,
+    @nombre NVARCHAR(32) = NULL,
     @descripcion NVARCHAR(128) = NULL
 AS
 BEGIN
 	SET NOCOUNT ON;
     UPDATE tb_Roles
     SET
-        rol = ISNULL(@rol, rol),
+        nombre = ISNULL(@nombre, nombre),
         descripcion = ISNULL(@descripcion, descripcion)
     WHERE idRol = @idRol;
 END;
@@ -387,10 +388,34 @@ BEGIN
 END;
 GO
 
+-- Procedimiento: Editar Ingresos Productos
+CREATE PROCEDURE sp_Editar_Ingreso_Stock_Producto
+    @idIngresoStock INT,
+    @cantidad INT = NULL,
+    @precio_compra DECIMAL(7,2) = NULL,
+    @precio_venta DECIMAL(7,2) = NULL,
+    @producto_idProducto INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE tb_Ingresos_Productos_Stock
+    SET 
+        cantidad = ISNULL(@cantidad, cantidad),
+        precio_compra = ISNULL(@precio_compra, precio_compra),
+        precio_venta = ISNULL(@precio_venta, precio_venta),
+        fecha_creacion = GETDATE(),
+        producto_idProducto = producto_idProducto
+    WHERE idIngresoStock = @idIngresoStock;
+    SELECT stock AS nuevo_stock
+    FROM tb_Productos
+    WHERE idProducto = @producto_idProducto;
+END;
+GO
+
 /** 
 	PROCEDIMIENTOS TABLA ORDEN 
 **/
--- Procedimiento: Crear Orden con sus detalless
+-- Procedimiento: Crear Orden con sus detalless TESTEAR
 CREATE PROCEDURE sp_Crear_Orden_Y_Detalles
     @total_orden DECIMAL(9,2),
     @status_Orden TINYINT,
@@ -409,14 +434,16 @@ BEGIN
         VALUES (@total_orden, @status_Orden, @usuarioCliente_idUsuario, @usuarioVendedor_idUsuario, @fecha_creacion);
         DECLARE @nuevoIdOrden INT = SCOPE_IDENTITY();
         -- Procesa el JSON para insertar los detalles de la orden
-        INSERT INTO tb_Detalles_Orden (cantidad, subtotal, producto_idProducto, orden_idOrden)
+        INSERT INTO tb_Detalles_Orden (cantidad, precio_venta, subtotal, producto_idProducto, orden_idOrden)
         SELECT
             detalles.cantidad,
+			detalles.precio_venta,
             detalles.subtotal,
             detalles.producto_idProducto,
             @nuevoIdOrden
         FROM OPENJSON(@detalles) WITH (
             cantidad INT '$.cantidad',
+            precio_venta DECIMAL(9,2) '$.precio_venta',
             subtotal DECIMAL(9,2) '$.subtotal',
             producto_idProducto INT '$.producto_idProducto'
         ) AS detalles;
@@ -464,17 +491,18 @@ BEGIN
 END;
 GO
 
--- Procedimiento: Crear Detalle Orden
+-- Procedimiento: Crear Detalle Orden TESTEAR
 CREATE PROCEDURE sp_Crear_Detalle_Orden
     @cantidad INT,
+    @precio_venta DECIMAL(9,2),
     @subtotal DECIMAL(9,2),
     @producto_idProducto INT,
     @orden_idOrden INT
 AS
 BEGIN
     SET NOCOUNT ON;
-    INSERT INTO tb_Detalles_Orden (cantidad, subtotal, producto_idProducto, orden_idOrden)
-    VALUES (@cantidad, @subtotal, @producto_idProducto, @orden_idOrden);
+    INSERT INTO tb_Detalles_Orden (cantidad, precio_venta, subtotal, producto_idProducto, orden_idOrden)
+    VALUES (@cantidad, @precio_venta, @subtotal, @producto_idProducto, @orden_idOrden);
 	SELECT SCOPE_IDENTITY() AS NuevoID;
 END
 GO
@@ -524,6 +552,41 @@ BEGIN
         END
     FROM tb_Productos pro
     INNER JOIN inserted i ON pro.idProducto = i.producto_idProducto;
+END;
+GO
+
+-- Trigger que nos actualiza el Stock con el ingreso reciente y los precios nuevos de compra y venta dependiendo del valor modificado.
+CREATE TRIGGER trg_Corregir_Stock_Al_Modificar_ingreso
+ON tb_Ingresos_Productos_Stock
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    IF EXISTS (SELECT 1 FROM inserted i JOIN deleted d ON i.producto_idProducto = d.producto_idProducto WHERE i.cantidad != d.cantidad)
+    BEGIN
+        UPDATE pro
+        SET 
+            pro.stock = (pro.stock - d.cantidad) + i.cantidad, 
+            pro.precio_compra = i.precio_compra,
+            pro.precio_venta = i.precio_venta,
+            pro.isActive = CASE 
+                WHEN (pro.stock - d.cantidad + i.cantidad) > 0 THEN 1
+                ELSE 0
+            END
+        FROM tb_Productos pro
+        INNER JOIN inserted i ON pro.idProducto = i.producto_idProducto
+        INNER JOIN deleted d ON pro.idProducto = d.producto_idProducto;
+    END
+    ELSE
+    BEGIN
+        UPDATE pro
+        SET 
+            pro.precio_compra = i.precio_compra,
+            pro.precio_venta = i.precio_venta
+        FROM tb_Productos pro
+        INNER JOIN inserted i ON pro.idProducto = i.producto_idProducto
+        INNER JOIN deleted d ON pro.idProducto = d.producto_idProducto;
+    END
 END;
 GO
 
@@ -603,7 +666,7 @@ CREATE VIEW vw_Usuarios AS
 SELECT
     usr.idUsuario,
     usr.nombre_completo,
-    rol.rol,
+    rol.nombre,
 	CASE 
         WHEN usr.isSuperUser = 1 THEN 'Activo'
         ELSE 'N/A'
@@ -721,6 +784,8 @@ SELECT
 	ord.idOrden,
 	ord.fecha_creacion,
 	ord.total_orden,
+	ord.status_Orden,
+	ord.isActive,
 	usC.nombre_completo AS cliente,
 	emC.nit AS nit_cliente,
 	usC.direccion AS direccion_cliente,
@@ -744,6 +809,7 @@ CREATE VIEW vw_Detalles_Orden AS
 SELECT
 	det.idDetalleOrden,
 	det.cantidad,
+	det.precio_venta,
 	pro.codigo,
 	pro.nombre,
 	det.subtotal,
