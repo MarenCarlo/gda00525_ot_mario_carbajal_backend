@@ -52,7 +52,7 @@ const validateToken = async (req: Request, res: Response, next: NextFunction) =>
          */
         return res.status(401).json({
             error_token: true,
-            error_message: 'Esta sesión no es valida o ha caducado.'
+            message: 'Esta sesión no es valida o ha caducado.'
         })
     }
 }
