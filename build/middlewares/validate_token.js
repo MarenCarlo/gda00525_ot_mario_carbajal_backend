@@ -55,7 +55,7 @@ const validateToken = (req, res, next) => __awaiter(void 0, void 0, void 0, func
          */
         return res.status(401).json({
             error_token: true,
-            error_message: 'Esta sesión no es valida o ha caducado.'
+            message: 'Esta sesión no es valida o ha caducado.'
         });
     }
 });
