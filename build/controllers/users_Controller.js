@@ -71,7 +71,7 @@ class UsersController {
         return __awaiter(this, void 0, void 0, function* () {
             const ip = req.socket.remoteAddress;
             console.info(ip);
-            const { nombre_completo, username, passphrase, repeat_passphrase, telefono, email, direccion, fecha_nacimiento, rol_idRol, empresa_idEmpresa, isSuperUser = 0, isActive = 0, } = req.body || {};
+            const { nombre_completo, username, passphrase, repeat_passphrase, telefono, email, direccion, fecha_nacimiento, rol_idRol, empresa_idEmpresa, isSuperUser = 0, isActive = 1, } = req.body || {};
             const { error } = userController_joi_1.userSchema.validate(req.body);
             if (error) {
                 return res.status(400).json({

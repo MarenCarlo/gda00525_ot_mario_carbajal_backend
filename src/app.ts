@@ -46,17 +46,18 @@ class App {
 
         // Configuraciones CORS para uso de Whitelist
         const whiteList = [process.env.CR_DOMAIN_1];
-        var corsOptions = {
+        const corsOptions = {
             origin: function (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) {
-                if (whiteList.indexOf(origin) !== -1 || !origin) {
-                    callback(null, true)
+                if (!origin || whiteList.includes(origin)) {
+                    callback(null, true);
                 } else {
-                    callback(new Error("Esta IP no es permitida"))
+                    callback(new Error("Origen no permitido por CORS"));
                 }
             },
-            methods: "GET, POST HEAD, PUT, PATCH ,DELETE",
-            preflightContinue: false,
-        }
+            methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+            allowedHeaders: ['Content-Type', 'Authorization', 'auth-token', 'Accept'],
+            credentials: true,
+        };
         this.app.use(cors(corsOptions));
     }
 

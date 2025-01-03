@@ -55,8 +55,25 @@ exports.userSchema = joi_1.default.object({
         'string.empty': 'La dirección no puede estar vacía.',
         'any.required': 'La dirección es obligatoria.',
     }),
-    fecha_nacimiento: joi_1.default.date().allow(null).messages({
+    fecha_nacimiento: joi_1.default.string()
+        .required()
+        .custom((value, helpers) => {
+        const parsedDate = new Date(value);
+        if (isNaN(parsedDate.getTime())) {
+            return helpers.error('date.base');
+        }
+        const currentYear = new Date().getFullYear();
+        const birthYear = parsedDate.getFullYear();
+        const age = currentYear - birthYear;
+        if (age < 18) {
+            return helpers.error('any.invalid');
+        }
+        return parsedDate.getTime();
+    })
+        .messages({
         'date.base': 'La fecha de nacimiento no es válida.',
+        'any.required': 'La fecha de nacimiento es obligatoria.',
+        'any.invalid': 'Debes ser mayor de 18 años.',
     }),
     isSuperUser: joi_1.default.boolean().default(false).messages({
         'boolean.base': 'El campo Superusuario debe ser un valor booleano.',

@@ -6,7 +6,6 @@ import { enterprisesController } from '../controllers/enterprises_Controller';
  */
 import validateToken from '../middlewares/validate_token';
 import validateAdminOrSeller from '../middlewares/validate_adminOrSeller';
-import validateAdmin from '../middlewares/validate_admin';
 
 class EnterprisesRouter {
     public router: Router = Router();
@@ -14,9 +13,9 @@ class EnterprisesRouter {
         this.config();
     }
     config(): void {
-        this.router.get('/getEnterprises/:idEmpresa?', validateToken, validateAdminOrSeller, enterprisesController.getEnterprises);
-        this.router.post('/addEnterprise', validateToken, validateAdminOrSeller, enterprisesController.addEnterprise);
-        this.router.put('/modifyEnterprise', validateToken, validateAdmin, enterprisesController.modifyEnterprise);
+        this.router.get('/getEnterprises/:idEmpresa?', validateToken, enterprisesController.getEnterprises);
+        this.router.post('/addEnterprise', validateToken, enterprisesController.addEnterprise);
+        this.router.put('/modifyEnterprise', validateToken, validateAdminOrSeller, enterprisesController.modifyEnterprise);
     }
 }
 
