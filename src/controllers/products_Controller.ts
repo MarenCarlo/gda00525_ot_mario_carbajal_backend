@@ -203,9 +203,28 @@ class ProductsController {
             const {
                 jsonData
             }: AddProductRequestBody = req.body || {};
+            if (!jsonData) {
+                return res.status(400).json({
+                    error: true,
+                    message: 'jsonData no está presente en el cuerpo de la solicitud.',
+                    data: {},
+                });
+            }
             const file = req.file as UploadedFile;
             let productData: modifyProductData;
-            productData = JSON.parse(jsonData);
+            // Aquí convertimos jsonData en un objeto JSON
+            try {
+                productData = JSON.parse(jsonData);  // Convertir JSON string a objeto
+            } catch (error) {
+                console.log(error)
+                return res.status(400).json({
+                    error: true,
+                    message: "Error al procesar los datos JSON",
+                    data: {}
+                });
+            }
+            console.log(productData)
+
             // Validación de datos del usuario con Joi
             const { error } = productOptionalSchema.validate(productData);
             if (error) {
@@ -225,6 +244,7 @@ class ProductsController {
                 descripcion = null,
                 categoria_idCategoria = null,
                 marca_idMarca = null,
+                isActive = null
             } = productData;
             /**
              * Manejo de Errores en subida de imagenes
@@ -285,7 +305,7 @@ class ProductsController {
                         nombre,
                         descripcion,
                         imagen: imageUrl,
-                        isActive: null,
+                        isActive,
                         categoria_idCategoria,
                         marca_idMarca
                     };

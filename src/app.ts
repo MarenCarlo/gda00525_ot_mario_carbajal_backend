@@ -40,10 +40,11 @@ class App {
         this.app.use(express.json());
         this.app.use(express.urlencoded({ extended: false }));
         this.app.use(helmet());
-
-        // Ruta para archivos Estaticos: IMAGENES DE PRODUCTOS.
-        this.app.use('/images/products', express.static(path.join(__dirname, '../images/products')));
-
+        this.app.use(
+            helmet({
+                crossOriginResourcePolicy: { policy: "cross-origin" }
+            })
+        );
         // Configuraciones CORS para uso de Whitelist
         const whiteList = [process.env.CR_DOMAIN_1];
         const corsOptions = {
@@ -59,6 +60,8 @@ class App {
             credentials: true,
         };
         this.app.use(cors(corsOptions));
+        // Ruta para archivos Estaticos: IMAGENES DE PRODUCTOS.
+        this.app.use('/images/products', express.static(path.join(__dirname, '../images/products')));
     }
 
 

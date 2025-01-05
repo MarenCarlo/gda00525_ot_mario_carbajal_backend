@@ -37,8 +37,9 @@ class App {
         this.app.use(express_1.default.json());
         this.app.use(express_1.default.urlencoded({ extended: false }));
         this.app.use((0, helmet_1.default)());
-        // Ruta para archivos Estaticos: IMAGENES DE PRODUCTOS.
-        this.app.use('/images/products', express_1.default.static(path_1.default.join(__dirname, '../images/products')));
+        this.app.use((0, helmet_1.default)({
+            crossOriginResourcePolicy: { policy: "cross-origin" }
+        }));
         // Configuraciones CORS para uso de Whitelist
         const whiteList = [process.env.CR_DOMAIN_1];
         const corsOptions = {
@@ -55,6 +56,8 @@ class App {
             credentials: true,
         };
         this.app.use((0, cors_1.default)(corsOptions));
+        // Ruta para archivos Estaticos: IMAGENES DE PRODUCTOS.
+        this.app.use('/images/products', express_1.default.static(path_1.default.join(__dirname, '../images/products')));
     }
     /**
      * Manejo de Enrutadores API.

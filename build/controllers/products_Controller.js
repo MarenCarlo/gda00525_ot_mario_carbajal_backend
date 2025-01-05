@@ -209,9 +209,28 @@ class ProductsController {
              */
             multerConfig_1.upload.single('image')(req, res, (err) => __awaiter(this, void 0, void 0, function* () {
                 const { jsonData } = req.body || {};
+                if (!jsonData) {
+                    return res.status(400).json({
+                        error: true,
+                        message: 'jsonData no está presente en el cuerpo de la solicitud.',
+                        data: {},
+                    });
+                }
                 const file = req.file;
                 let productData;
-                productData = JSON.parse(jsonData);
+                // Aquí convertimos jsonData en un objeto JSON
+                try {
+                    productData = JSON.parse(jsonData); // Convertir JSON string a objeto
+                }
+                catch (error) {
+                    console.log(error);
+                    return res.status(400).json({
+                        error: true,
+                        message: "Error al procesar los datos JSON",
+                        data: {}
+                    });
+                }
+                console.log(productData);
                 // Validación de datos del usuario con Joi
                 const { error } = productController_joi_1.productOptionalSchema.validate(productData);
                 if (error) {
@@ -224,7 +243,7 @@ class ProductsController {
                         data: {}
                     });
                 }
-                const { idProducto, codigo = null, nombre = null, descripcion = null, categoria_idCategoria = null, marca_idMarca = null, } = productData;
+                const { idProducto, codigo = null, nombre = null, descripcion = null, categoria_idCategoria = null, marca_idMarca = null, isActive = null } = productData;
                 /**
                  * Manejo de Errores en subida de imagenes
                  */
@@ -283,7 +302,7 @@ class ProductsController {
                             nombre,
                             descripcion,
                             imagen: imageUrl,
-                            isActive: null,
+                            isActive,
                             categoria_idCategoria,
                             marca_idMarca
                         };
