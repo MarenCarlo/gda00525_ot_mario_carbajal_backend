@@ -787,6 +787,8 @@ SELECT
 	ord.status_Orden,
 	ord.isActive,
 	usC.nombre_completo AS cliente,
+	usC.telefono,
+	usC.email,
 	emC.nit AS nit_cliente,
 	emC.razon_social AS empresa_cliente,
 	usC.direccion AS direccion_cliente,
