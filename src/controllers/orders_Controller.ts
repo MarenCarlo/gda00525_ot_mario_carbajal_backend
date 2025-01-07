@@ -268,7 +268,7 @@ class OrdersController {
             usuarioCliente_idUsuario = null,
             usuarioVendedor_idUsuario = null
         }: modifyOrderBody = req.body || {};
-        let userVendedor: number = usuarioVendedor_idUsuario === user!.idUsuario ? user!.idUsuario : usuarioVendedor_idUsuario;
+        let userVendedor: number | null = usuarioVendedor_idUsuario;
         let statusOrden: number | null = null;
 
         /**
@@ -284,6 +284,9 @@ class OrdersController {
             statusOrden = status_Orden
         }
 
+        if (status_Orden === 2) {
+            userVendedor = user!.idUsuario;
+        }
         const { error } = orderOptionalSchema.validate(req.body);
         if (error) {
             return res.status(400).json({

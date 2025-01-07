@@ -266,7 +266,7 @@ class OrdersController {
             console.info(ip);
             const user = req.user;
             const { idOrden, status_Orden = null, isActive = null, usuarioCliente_idUsuario = null, usuarioVendedor_idUsuario = null } = req.body || {};
-            let userVendedor = usuarioVendedor_idUsuario === user.idUsuario ? user.idUsuario : usuarioVendedor_idUsuario;
+            let userVendedor = usuarioVendedor_idUsuario;
             let statusOrden = null;
             /**
              * Condicional que hace que si la orden es eliminada,
@@ -280,6 +280,9 @@ class OrdersController {
             }
             else {
                 statusOrden = status_Orden;
+            }
+            if (status_Orden === 2) {
+                userVendedor = user.idUsuario;
             }
             const { error } = orderController_joi_1.orderOptionalSchema.validate(req.body);
             if (error) {
