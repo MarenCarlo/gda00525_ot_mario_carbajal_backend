@@ -121,7 +121,15 @@ class AuthController {
                     error: false,
                     message: 'Sesión iniciada.',
                     data: {
-                        'auth-token': token
+                        'authToken': token,
+                        'userData': {
+                            idUsuario: user.idUsuario,
+                            username: user.username,
+                            nombreUsuario: user.nombre_completo,
+                            isActive: user.isActive,
+                            rol: user.rol,
+                            empresa: user.empresa
+                        }
                     },
                 });
             }

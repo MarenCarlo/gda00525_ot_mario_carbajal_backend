@@ -29,11 +29,14 @@ class EnterprisesController {
             const { idEmpresa } = req.params;
             let idEmpresaParsed = Number(idEmpresa);
             try {
+                let empresaDB;
                 if (idEmpresaParsed) {
                     if ((0, inputTypesValidations_1.isValidNumber)(idEmpresaParsed)) {
-                        const empresaDB = yield tb_empresas_1.default.findOne({
-                            where: { idEmpresa: idEmpresaParsed }
-                        });
+                        if ((0, inputTypesValidations_1.isValidNumber)(idEmpresaParsed)) {
+                            empresaDB = yield tb_empresas_1.default.findOne({
+                                where: { idEmpresa: idEmpresaParsed }
+                            });
+                        }
                         if (!empresaDB) {
                             return res.status(404).json({
                                 error: true,
@@ -54,6 +57,23 @@ class EnterprisesController {
                             data: { idEmpresaParsed }
                         });
                     }
+                }
+                else if (idEmpresa) {
+                    empresaDB = yield tb_empresas_1.default.findOne({
+                        where: { nit: idEmpresa }
+                    });
+                    if (!empresaDB) {
+                        return res.status(404).json({
+                            error: true,
+                            message: 'La empresa no existe en DB.',
+                            data: {}
+                        });
+                    }
+                    return res.status(200).json({
+                        error: false,
+                        message: 'Empresa obtenida exitosamente.',
+                        data: empresaDB
+                    });
                 }
                 else {
                     const empresasDB = yield tb_empresas_1.default.findAll();

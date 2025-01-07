@@ -70,7 +70,7 @@ class UsersController {
             rol_idRol,
             empresa_idEmpresa,
             isSuperUser = 0,
-            isActive = 0,
+            isActive = 1,
         }: AddUsuario = req.body || {};
         const { error } = userSchema.validate(req.body);
         if (error) {

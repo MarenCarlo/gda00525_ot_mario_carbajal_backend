@@ -69,11 +69,14 @@ exports.productOptionalSchema = joi_1.default.object({
         'number.integer': 'La categoría debe ser un número entero.',
         'number.empty': 'La categoría no puede estar vacía.',
     }),
-    marca_idMarca: joi_1.default.number().integer().allow(null).messages({
+    marca_idMarca: joi_1.default.number().integer().messages({
         'number.base': 'La marca debe ser un número.',
         'number.integer': 'La marca debe ser un número entero.',
         'number.empty': 'La marca no puede estar vacía.',
     }),
+    isActive: joi_1.default.boolean().allow(null).messages({
+        'boolean.base': 'El estado debe ser un valor booleano.',
+    })
 });
 exports.ingressSchema = joi_1.default.object({
     cantidad: joi_1.default.number().integer().positive().min(1).required().messages({

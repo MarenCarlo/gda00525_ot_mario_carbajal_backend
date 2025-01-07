@@ -787,10 +787,14 @@ SELECT
 	ord.status_Orden,
 	ord.isActive,
 	usC.nombre_completo AS cliente,
+	usC.telefono,
+	usC.email,
 	emC.nit AS nit_cliente,
+	emC.razon_social AS empresa_cliente,
 	usC.direccion AS direccion_cliente,
 	usV.nombre_completo AS vendedor,
 	emV.nit AS nit_venta,
+	emV.razon_social AS empresa_venta,
 	usV.direccion AS direccion_venta
 FROM
     tb_Ordenes ord
@@ -812,6 +816,7 @@ SELECT
 	det.precio_venta,
 	pro.codigo,
 	pro.nombre,
+	pro.imagen,
 	det.subtotal,
 	det.orden_idOrden
 FROM

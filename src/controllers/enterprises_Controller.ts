@@ -18,11 +18,15 @@ class EnterprisesController {
         const { idEmpresa } = req.params;
         let idEmpresaParsed = Number(idEmpresa);
         try {
+            let empresaDB;
             if (idEmpresaParsed) {
                 if (isValidNumber(idEmpresaParsed)) {
-                    const empresaDB: Awaited<ReturnType<typeof Empresa.findOne>> | null = await Empresa.findOne({
-                        where: { idEmpresa: idEmpresaParsed }
-                    });
+                    if (isValidNumber(idEmpresaParsed)) {
+                        empresaDB = await Empresa.findOne({
+                            where: { idEmpresa: idEmpresaParsed }
+                        });
+
+                    }
                     if (!empresaDB) {
                         return res.status(404).json({
                             error: true,
@@ -42,6 +46,22 @@ class EnterprisesController {
                         data: { idEmpresaParsed }
                     });
                 }
+            } else if (idEmpresa) {
+                empresaDB = await Empresa.findOne({
+                    where: { nit: idEmpresa }
+                });
+                if (!empresaDB) {
+                    return res.status(404).json({
+                        error: true,
+                        message: 'La empresa no existe en DB.',
+                        data: {}
+                    });
+                }
+                return res.status(200).json({
+                    error: false,
+                    message: 'Empresa obtenida exitosamente.',
+                    data: empresaDB
+                });
             } else {
                 const empresasDB: Awaited<ReturnType<typeof Empresa.findAll>> = await Empresa.findAll();
                 if (!empresasDB || empresasDB.length === 0) {
