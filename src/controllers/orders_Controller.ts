@@ -91,18 +91,17 @@ class OrdersController {
     public async getOrders(req: Request, res: Response) {
         const ip = req.socket.remoteAddress;
         console.info(ip);
-        const { idOrden } = req.params;
+        const { state } = req.params;
         try {
             /**
              * OBTENCION DE ORDENES
              */
             let query1: string = 'SELECT * FROM vw_Ordenes';
             let query2: string = 'SELECT * FROM vw_Detalles_Orden';
-            let idEmpresaParsed = Number(idOrden);
-            if (idOrden) {
-                if (isValidNumber(idEmpresaParsed)) {
-                    query1 += ` WHERE idOrden = ${Number(idEmpresaParsed)}`;
-                    query2 += ` WHERE orden_idOrden = ${Number(idEmpresaParsed)}`;
+            let status_order_param = Number(state);
+            if (state) {
+                if (isValidNumber(status_order_param)) {
+                    query1 += ` WHERE status_Orden = ${Number(status_order_param)}`;
                 } else {
                     return res.status(400).json({
                         error: true,

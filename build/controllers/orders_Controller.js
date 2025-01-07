@@ -101,18 +101,17 @@ class OrdersController {
         return __awaiter(this, void 0, void 0, function* () {
             const ip = req.socket.remoteAddress;
             console.info(ip);
-            const { idOrden } = req.params;
+            const { state } = req.params;
             try {
                 /**
                  * OBTENCION DE ORDENES
                  */
                 let query1 = 'SELECT * FROM vw_Ordenes';
                 let query2 = 'SELECT * FROM vw_Detalles_Orden';
-                let idEmpresaParsed = Number(idOrden);
-                if (idOrden) {
-                    if ((0, inputTypesValidations_1.isValidNumber)(idEmpresaParsed)) {
-                        query1 += ` WHERE idOrden = ${Number(idEmpresaParsed)}`;
-                        query2 += ` WHERE orden_idOrden = ${Number(idEmpresaParsed)}`;
+                let status_order_param = Number(state);
+                if (state) {
+                    if ((0, inputTypesValidations_1.isValidNumber)(status_order_param)) {
+                        query1 += ` WHERE status_Orden = ${Number(status_order_param)}`;
                     }
                     else {
                         return res.status(400).json({
