@@ -812,6 +812,7 @@ SELECT
 	det.precio_venta,
 	pro.codigo,
 	pro.nombre,
+	pro.imagen,
 	det.subtotal,
 	det.orden_idOrden
 FROM

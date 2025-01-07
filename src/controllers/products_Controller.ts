@@ -77,6 +77,7 @@ class ProductsController {
                     });
                 }
             }
+            query += ` ORDER BY isActive;`;
             const productos = await sequelize.query(query, {
                 type: 'SELECT'
             });

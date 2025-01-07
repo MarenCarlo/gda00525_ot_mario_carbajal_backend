@@ -23,6 +23,77 @@ const inputTypesValidations_1 = require("../shared/inputTypesValidations");
 const handleDatabaseError_1 = require("../shared/handleDatabaseError");
 class OrdersController {
     /**
+     * Este Endpoint sirve para recibir las Ordenes del usuario de la sesion.
+     */
+    getOwnOrders(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const ip = req.socket.remoteAddress;
+            console.info(ip);
+            const user = req.user;
+            console.log(user);
+            const { idOrden } = req.params;
+            try {
+                /**
+                 * OBTENCION DE ORDENES
+                 */
+                let query1 = 'SELECT * FROM vw_Ordenes';
+                let query2 = 'SELECT * FROM vw_Detalles_Orden';
+                let idEmpresaParsed = Number(idOrden);
+                if (idOrden) {
+                    if ((0, inputTypesValidations_1.isValidNumber)(idEmpresaParsed)) {
+                        query1 += ` WHERE idOrden = ${Number(idEmpresaParsed)} AND cliente = '${user.nombreUsuario} AND isActive = 1'`;
+                        query2 += ` WHERE orden_idOrden = ${Number(idEmpresaParsed)}`;
+                    }
+                    else {
+                        return res.status(400).json({
+                            error: true,
+                            message: 'El ID de producto no es válido.',
+                            data: {}
+                        });
+                    }
+                }
+                else {
+                    query1 += ` WHERE cliente = '${user.nombreUsuario}' AND isActive = 1`;
+                }
+                query1 += ` ORDER BY fecha_creacion DESC;`;
+                const ordenes = yield connection_1.default.query(query1, {
+                    type: 'SELECT'
+                });
+                ;
+                if (!ordenes || ordenes === null) {
+                    return res.status(404).json({
+                        error: true,
+                        message: 'No se encontraron ordenes.',
+                        data: {}
+                    });
+                }
+                /**
+                 * OBTENCION DE DETALLES DE ORDENES
+                 */
+                const ordenesDetalles = yield connection_1.default.query(query2, {
+                    type: 'SELECT'
+                });
+                /**
+                 * SETEO DE OBJETO DE ORDENES
+                 * CON SUS RESPECTIVOS DETALLES
+                 */
+                const ordenesDetalladas = ordenes.map((orden) => {
+                    return Object.assign(Object.assign({}, orden), { detalles: ordenesDetalles.filter((detalle) => detalle.orden_idOrden === orden.idOrden) });
+                });
+                return res.status(200).json({
+                    error: false,
+                    message: 'Ordenes obtenidas exitosamente.',
+                    data: {
+                        ordenesDetalladas
+                    }
+                });
+            }
+            catch (error) {
+                return (0, handleDatabaseError_1.handleDatabaseError)(error, res);
+            }
+        });
+    }
+    /**
     * Este Endpoint sirve para obtener las ordenes y sus respectivos detalles
     * o una sola
     */

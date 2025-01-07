@@ -92,6 +92,7 @@ class ProductsController {
                         });
                     }
                 }
+                query += ` ORDER BY isActive;`;
                 const productos = yield connection_1.default.query(query, {
                     type: 'SELECT'
                 });

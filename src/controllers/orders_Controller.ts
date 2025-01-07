@@ -14,6 +14,77 @@ import { addOrderBody, addOrderDetailBody, deleteOrderDetailBody, intDetalleOrde
 class OrdersController {
 
     /**
+     * Este Endpoint sirve para recibir las Ordenes del usuario de la sesion.
+     */
+    public async getOwnOrders(req: Request, res: Response) {
+        const ip = req.socket.remoteAddress;
+        console.info(ip);
+        const user = req.user;
+        console.log(user)
+        const { idOrden } = req.params;
+        try {
+            /**
+             * OBTENCION DE ORDENES
+             */
+            let query1: string = 'SELECT * FROM vw_Ordenes';
+            let query2: string = 'SELECT * FROM vw_Detalles_Orden';
+            let idEmpresaParsed = Number(idOrden);
+            if (idOrden) {
+                if (isValidNumber(idEmpresaParsed)) {
+                    query1 += ` WHERE idOrden = ${Number(idEmpresaParsed)} AND cliente = '${user!.nombreUsuario} AND isActive = 1'`;
+                    query2 += ` WHERE orden_idOrden = ${Number(idEmpresaParsed)}`;
+                } else {
+                    return res.status(400).json({
+                        error: true,
+                        message: 'El ID de producto no es válido.',
+                        data: {}
+                    });
+                }
+            } else {
+                query1 += ` WHERE cliente = '${user!.nombreUsuario}' AND isActive = 1`;
+            }
+            query1 += ` ORDER BY fecha_creacion DESC;`;
+            const ordenes = await sequelize.query(query1, {
+                type: 'SELECT'
+            }) as intOrden[];;
+            if (!ordenes || ordenes === null) {
+                return res.status(404).json({
+                    error: true,
+                    message: 'No se encontraron ordenes.',
+                    data: {}
+                });
+            }
+            /**
+             * OBTENCION DE DETALLES DE ORDENES
+             */
+            const ordenesDetalles = await sequelize.query(query2, {
+                type: 'SELECT'
+            }) as intDetalleOrden[];
+            /**
+             * SETEO DE OBJETO DE ORDENES
+             * CON SUS RESPECTIVOS DETALLES
+             */
+            const ordenesDetalladas: intOrden[] = ordenes.map((orden: intOrden) => {
+                return {
+                    ...orden,
+                    detalles: ordenesDetalles.filter(
+                        (detalle: intDetalleOrden) => detalle.orden_idOrden === orden.idOrden
+                    ),
+                };
+            });
+            return res.status(200).json({
+                error: false,
+                message: 'Ordenes obtenidas exitosamente.',
+                data: {
+                    ordenesDetalladas
+                }
+            });
+        } catch (error) {
+            return handleDatabaseError(error, res);
+        }
+    }
+
+    /**
     * Este Endpoint sirve para obtener las ordenes y sus respectivos detalles
     * o una sola
     */
