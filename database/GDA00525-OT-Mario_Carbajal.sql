@@ -666,7 +666,8 @@ CREATE VIEW vw_Usuarios AS
 SELECT
     usr.idUsuario,
     usr.nombre_completo,
-    rol.nombre,
+	usr.username,
+    rol.nombre as rol_nombre,
 	CASE 
         WHEN usr.isSuperUser = 1 THEN 'Activo'
         ELSE 'N/A'
