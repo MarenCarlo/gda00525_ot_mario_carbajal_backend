@@ -667,6 +667,7 @@ SELECT
     usr.idUsuario,
     usr.nombre_completo,
 	usr.username,
+	rol.idRol,
     rol.nombre as rol_nombre,
 	CASE 
         WHEN usr.isSuperUser = 1 THEN 'Activo'
@@ -674,12 +675,61 @@ SELECT
     END AS isSuperUser,
     usr.telefono,
     usr.email,
+	emp.idEmpresa,
     emp.nombre_comercial AS empresa,
     CASE 
         WHEN usr.isActive = 1 THEN 'Activo'
         ELSE 'Desactivado'
     END AS isActive,
-	usr.direccion
+	usr.direccion,
+	(CASE 
+        WHEN usr.rol_idRol = 3 THEN
+            (SELECT 
+                COUNT(ord.idOrden)
+             FROM
+                tb_Ordenes ord
+             WHERE
+                ord.usuarioCliente_idUsuario = usr.idUsuario
+                AND ord.status_Orden = '2'
+                AND ord.isActive <> '0')
+        ELSE NULL
+    END) AS ordenes_realizadas,
+    (CASE 
+        WHEN usr.rol_idRol = 2 THEN
+            (SELECT 
+                COUNT(ord.idOrden)
+             FROM
+                tb_Ordenes ord
+             WHERE
+                ord.usuarioVendedor_idUsuario = usr.idUsuario
+                AND ord.status_Orden = '2'
+                AND ord.isActive <> '0')
+        ELSE NULL
+    END) AS ordenes_atendidas,
+	(CASE 
+        WHEN usr.rol_idRol = 3 THEN
+            (SELECT 
+                SUM(ord.total_orden)
+             FROM
+                tb_Ordenes ord
+             WHERE
+                ord.usuarioCliente_idUsuario = usr.idUsuario
+                AND ord.status_Orden = '2'
+                AND ord.isActive <> '0')
+        ELSE NULL
+    END) AS compras_realizadas,
+	(CASE 
+        WHEN usr.rol_idRol = 2 THEN
+            (SELECT 
+                SUM(ord.total_orden)
+             FROM
+                tb_Ordenes ord
+             WHERE
+                ord.usuarioVendedor_idUsuario = usr.idUsuario
+                AND ord.status_Orden = '2'
+                AND ord.isActive <> '0')
+        ELSE NULL
+    END) AS ventas_realizadas
 FROM
     tb_Usuarios usr
 INNER JOIN 
