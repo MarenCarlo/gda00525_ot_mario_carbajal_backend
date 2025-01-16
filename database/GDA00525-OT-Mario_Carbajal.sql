@@ -675,6 +675,7 @@ SELECT
     END AS isSuperUser,
     usr.telefono,
     usr.email,
+	usr.fecha_nacimiento,
 	emp.idEmpresa,
     emp.nombre_comercial AS empresa,
     CASE 
@@ -735,7 +736,7 @@ FROM
 INNER JOIN 
     tb_Roles rol ON usr.rol_idRol = rol.idRol
 INNER JOIN 
-    tb_Empresas emp ON usr.empresa_idEmpresa = emp.idEmpresa;
+    tb_Empresas emp ON usr.empresa_idEmpresa = emp.idEmpresa
 GO
 
 -- VIEW: Tabla Productos con informacion interna.

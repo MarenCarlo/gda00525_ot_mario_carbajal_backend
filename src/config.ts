@@ -12,5 +12,6 @@ export default {
     DB_username: process.env.DB_USER || "sa",
     DB_password: process.env.DB_PASSWORD || "",
     DB_port: server_state === true ? Number(process.env.DB_PORT_PRO) : Number(process.env.DB_PORT_DEV) || 1433,
-    APP_staging: server_state
+    APP_staging: server_state,
+    DB_timezone: process.env.DB_TIMEZONE || "UTC"
 }

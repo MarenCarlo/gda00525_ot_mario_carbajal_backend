@@ -19,6 +19,7 @@ const sequelize = new sequelize_1.Sequelize(config_1.default.DB_database, config
     host: config_1.default.DB_host,
     dialect: config_1.default.DB_dialect,
     port: config_1.default.DB_port,
+    timezone: config_1.default.DB_timezone,
     logging: false
 });
 const testConnection = () => __awaiter(void 0, void 0, void 0, function* () {
@@ -31,6 +32,7 @@ const testConnection = () => __awaiter(void 0, void 0, void 0, function* () {
             'port': config_1.default.DB_port,
             'database': config_1.default.DB_database,
             'user': config_1.default.DB_username,
+            'timezone': config_1.default.DB_timezone,
             'staging': config_1.default.APP_staging === true ? 'production' : 'development'
         });
     }
@@ -42,6 +44,7 @@ const testConnection = () => __awaiter(void 0, void 0, void 0, function* () {
             'port': config_1.default.DB_port,
             'database': config_1.default.DB_database,
             'user': config_1.default.DB_username,
+            'timezone': config_1.default.DB_timezone,
             'staging': config_1.default.APP_staging === true ? 'production' : 'development'
         });
     }

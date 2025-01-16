@@ -121,6 +121,10 @@ exports.userStateSchema = joi_1.default.object({
         'string.max': 'La contraseña no puede superar los 255 caracteres.',
         'string.empty': 'La contraseña no puede estar vacía.',
     }),
+    repeat_passphrase: joi_1.default.string().valid(joi_1.default.ref('passphrase')).allow(null)
+        .messages({
+        'any.only': 'La contraseña no coincide.'
+    }),
     telefono: joi_1.default.string().length(8).allow(null).messages({
         'string.base': 'El Teléfono debe ser de tipo texto.',
         'string.length': 'El teléfono debe tener exactamente 8 caracteres.',
@@ -144,5 +148,17 @@ exports.userStateSchema = joi_1.default.object({
     }),
     newStateValue: joi_1.default.boolean().allow(null).messages({
         'boolean.base': 'El estado debe ser un valor booleano.',
-    })
+    }),
+    rol_idRol: joi_1.default.number().integer().min(1).allow(null).messages({
+        'number.base': 'El rol debe ser un número.',
+        'number.integer': 'El rol debe ser un número entero.',
+        'number.min': 'El rol debe ser al menos 1.',
+        'any.required': 'El rol es obligatorio.',
+    }),
+    empresa_idEmpresa: joi_1.default.number().integer().min(1).allow(null).messages({
+        'number.base': 'La empresa debe ser un número.',
+        'number.integer': 'La empresa debe ser un número entero.',
+        'number.min': 'La empresa debe ser al menos 1.',
+        'any.required': 'La empresa es obligatoria.',
+    }),
 });
